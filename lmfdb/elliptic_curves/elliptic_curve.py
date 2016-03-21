@@ -21,6 +21,7 @@ import sage.all
 from sage.all import ZZ, QQ, EllipticCurve, latex, matrix, srange
 q = ZZ['x'].gen()
 
+
 #########################
 #   Database connection
 #########################
@@ -79,6 +80,7 @@ def learnmore_list_remove(matchstring):
 #  Search/navigate
 #########################
 
+
 @ec_page.route("/")
 def rational_elliptic_curves(err_args=None):
     if err_args is None:
@@ -96,11 +98,24 @@ def rational_elliptic_curves(err_args=None):
                                                                        conductor_list_endpoints[1:])]
     rank_list = range(counts['max_rank'] + 1)
     torsion_list = range(1,11) + [12, 16]
+
+    list_image_modp ={'B','Cs','Ns','Cn','Nn','S4'}
+    dict_image_modp = {
+            'B':'Borel',
+            'Cs':'split Cartan', 
+            'Ns':'normalizer of the split Cartan',
+            'Cn':'nonsplit Cartan',
+            'Nn':'normalizer of the nonsplit Cartan',
+            'S4':'$S_4$ exceptional'
+        }
+
     info = {
         'rank_list': rank_list,
         'torsion_list': torsion_list,
         'conductor_list': conductor_list,
         'counts': counts,
+        'dict_image_modp': dict_image_modp,
+        'list_image_modp': list_image_modp,
         'stats_url': url_for(".statistics")
     }
     credit = 'John Cremona and Andrew Sutherland'
