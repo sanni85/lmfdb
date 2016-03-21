@@ -155,13 +155,7 @@ Please enter a value or leave blank:
 </tr>
 
 <tr>
-<td colspan=4>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} is 
-<select name='image_modp' width="122" style="width: 122px">
-        <option ></option>
-    {% for image in info.list_image_modp %}
-        <option value='{{image}}'>{{info.dict_image_modp[image]}}</option>
-    {% endfor %}
-</select>
+<td colspan=4>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} X <input type='text' name='residue_prime' size=3 example= 181><input type='text' name='residue_prime' size=3 example=e > e.g. X181e
 </td>
 </tr>
 
@@ -181,7 +175,7 @@ Please enter a value or leave blank:
     {% for image in info.list_image_modp %}
         <option value='{{image}}'>{{image}}</option>
     {% endfor %}
-</select>.<input type='text' name='residue_prime' size=3 example= 2>.<input type='text' name='residue_prime' size=3 example= 3>.<input type='text' name='residue_prime' size=3 example= 2>
+</select>.<input type='text' name='residue_prime' size=3 example= 2>.<input type='text' name='residue_prime' size=3 example= 3>.<input type='text' name='residue_prime' size=3 example= 2> e.g. 3, B.1.1
 </td>
 </tr>
     <tr>
