@@ -212,7 +212,20 @@ Please enter a value or leave blank:
         <option value='{{image}}'>{{info.dict_image_modp[image]}}</option>
     {% endfor %}
 </select>
-</td>
+</td> 
+<div class="container">
+    <div class="header"><p>for more search parameters <button type="button"> click here</button> </p></div>
+    <div class="content">
+<tr><td colspan=4>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width="122" style="width: 122px">
+        <option ></option>
+    {% for image in info.list_image_modp %}
+        <option value='{{image}}'>{{info.dict_image_modp[image]}}</option>
+    {% endfor %}
+</select>
+</td> 
+</tr>
+</div></div>
+
 </tr>
 <tr>
 <td colspan=6>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is <select name='image_modp' width="122" style="width: 122px">
@@ -225,25 +238,29 @@ Please enter a value or leave blank:
 </tr>
 
 
-
-
-  </table>
-<p></p>
-<td><button type='submit' value='Search'>Search</button></td>
-</form>
-
 <tr>
 <td align=left colspan=4>Maximum number of curves to display <input type='text' name='count' value={{count}} size=10 />
 </td>
 </tr>
+</table>
 
-
-  </table>
 <p></p>
 <td><button type='submit' value='Search'>Search</button></td>
-
 </form>
 
+
+<script>
+$(".header").click(function () {
+    $header = $(this);
+    //getting the next element
+    $content = $header.next();
+    //open up the content needed - toggle the slide- if visible, slide up, if not slidedown.
+    $content.slideToggle(500, function () {
+        //execute this after slideToggle is done
+        //change text of header based on visibility of content div
+    });
+});
+</script>
 {% endif %}
 
 
