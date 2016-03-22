@@ -94,24 +94,12 @@ Please enter a value or leave blank:
      </td>
      <td><span class="formexample"> e.g. 1728 or -4096/11</span></td>
     </tr>
- <tr>
-      <td align='right'>{{ KNOWL('ec.endomorphism_ring',title="endomorphisms") }}</td>
-	<td>
-           <select name='cm'>
-{% if optimal=='on' %}
-           <option value="">without CM</option>
-           <option value="on" selected="yes">CM</option>
-{% else %}
-           <option value="">without CM</option>
-           <option value="on">CM</option>
-{% endif %}
-         </select>
-      </td>
-    </tr>
-   <tr>
-   <td align='right'>
-    {{ KNOWL('ec.q.rank',title="rank") }}
-    </td>
+
+<tr><td align='right'>{{ KNOWL('ec.endomorphism_ring',title="endomorphisms") }}</td><td><select name='cm'> <option></option> <option value="no_cm">without CM</option> <option value="cm" selected="yes">CM</option></select></td>
+</tr>
+
+<tr>
+<td align='right'>{{ KNOWL('ec.q.rank',title="rank") }}</td>
            <td>
            <input type='text' name='rank' example="0" size=10 value="{{rank}}" />
            </td>
@@ -151,8 +139,8 @@ Please enter a value or leave blank:
       </tr>
 <tr>
 <td align='right'>{{ KNOWL('ec.q.bad_reduction_primes',title="primes of bad reduction") }}</td>
-<td><input type='text' name='list_bad' example="2,3,5" size=5><select name='surj_quantifier'><option value='include'>include</option><option value='exactly'>exactly</option></select></td>
-<td><span class="formexample"> e.g. 2,3,5 </span></td>          
+<td><select name='bad_red_quantifier'><option></option><option value='include'>include</option><option value='exactly'>exactly</option><option value='exclude'>exclude</option></select>
+<input type='text' name='list_bad_red' example="2,3,5" size=5></td><td><span class="formexample"> e.g. 2,3,5 </span></td>          
 </tr>
   </table>
 </form>
@@ -170,6 +158,7 @@ Please enter a value or leave blank:
       <td align='right'>{{ KNOWL('ec.q.optimal',title="Optimal only") }}</td>
       <td>
          <select name='optimal'>
+<option></option>
 {% if optimal=='on' %}
            <option value="">No</option>
            <option value="on" selected="yes">Yes</option>
@@ -188,80 +177,51 @@ Please enter a value or leave blank:
 
 <h3> Galois Representation </h3>
 <form>
-  <table>
-  <tr>
-	<td align='right'>{{KNOWL('ec.q.surjective_prime', title='surjective primes')}}</td>
-	   <td><input type='text' name='surj_primes' size=10 example='2,3'></td>
-	   <td><span class="formexample"> e.g. 2,3</span></td>
-	<td align='right'>{{KNOWL('ec.q.non-surjective_prime', title='non-surjective primes')}}
-           <select name='surj_quantifier'><option value='include'>include</option><option value='exactly'>exactly</option></select></td>
-		<td><input type='text' name='nonsurj_primes' size=10 example='2,3'></td>
-		<td><span class="formexample"> e.g. 2,3</span></td>
-  </tr>	
+<table>
+<tr>
+<td align='right'>{{KNOWL('ec.q.surjective_prime', title='surjective primes')}}</td>
+<td><input type='text' name='surj_primes' size=5 example='2,3'></td>
+<td><span class="formexample"> e.g. 2,3</span></td>
+</tr>
+<tr>
+<td align='right'>{{KNOWL('ec.q.non-surjective_prime', title='non-surjective primes')}}</td>
+<td><select name='surj_quantifier'><option></option><option value='include'>include</option><option value='exactly'>exactly</option></select>
+<input type='text' name='nonsurj_primes' size=5 example='2,3'></td>
+<td align='left'><span class="formexample"> e.g. 2,3</span></td>
+</tr>	
 
 <tr>
-<td colspan=4>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} X <input type='text' name='residue_prime' size=3 example= 181><input type='text' name='residue_prime' size=3 example=e > e.g. X181e
+<td align='right'>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} 
+<td><input type='text' name='rouse_label' size=5 example= X181e></td><td><span class="formexample">e.g. X181e</span></td>
 </td>
 </tr>
 
 
 <tr>
-<td colspan=4>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width="122" style="width: 122px">
+<td colspan=3>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width="122" style="width: 122px">
         <option ></option>
     {% for image in info.list_image_modp %}
         <option value='{{image}}'>{{info.dict_image_modp[image]}}</option>
     {% endfor %}
-</select>
-</td> 
-<div class="container">
-    <div class="header"><p>for more search parameters <button type="button"> click here</button> </p></div>
-    <div class="content">
-<tr><td colspan=4>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width="122" style="width: 122px">
-        <option ></option>
-    {% for image in info.list_image_modp %}
-        <option value='{{image}}'>{{info.dict_image_modp[image]}}</option>
-    {% endfor %}
-</select>
-</td> 
-</tr>
-</div></div>
-
-</tr>
-<tr>
-<td colspan=6>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is <select name='image_modp' width="122" style="width: 122px">
-        <option ></option>
-    {% for image in info.list_image_modp %}
-        <option value='{{image}}'>{{image}}</option>
-    {% endfor %}
-</select>.<input type='text' name='residue_prime' size=3 example= 2>.<input type='text' name='residue_prime' size=3 example= 3>.<input type='text' name='residue_prime' size=3 example= 2> e.g. 3, B.1.1
+</select> 
 </td>
 </tr>
 
-
 <tr>
-<td align=left colspan=4>Maximum number of curves to display <input type='text' name='count' value={{count}} size=10 />
-</td>
+<td colspan=2>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> has label <input type='text' name='label_image_modp' size=3 example= B.1.1></td><td><span class="formexample">e.g. 3, B.1.1</span></td>
 </tr>
 </table>
+
+
+<p colspan=3>Maximum number of curves to display <input type='text' name='count' value={{count}} size=10 ></p>
+
 
 <p></p>
 <td><button type='submit' value='Search'>Search</button></td>
 </form>
 
 
-<script>
-$(".header").click(function () {
-    $header = $(this);
-    //getting the next element
-    $content = $header.next();
-    //open up the content needed - toggle the slide- if visible, slide up, if not slidedown.
-    $content.slideToggle(500, function () {
-        //execute this after slideToggle is done
-        //change text of header based on visibility of content div
-    });
-});
-</script>
-{% endif %}
 
+{% endif %}
 
 {% endblock %}
