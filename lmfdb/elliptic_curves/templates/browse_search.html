@@ -77,9 +77,9 @@ A <a href={{url_for('.random_curve')}}>random elliptic curve</a> from the databa
 <h2> Search </h2>
 Please enter a value or leave blank:
 <p></p>
-
-<h3> Invariants </h3>
 <form>
+<h3 color='green'> Invariants </h3>
+
   <table>
     <tr>
       <td align='right'>{{ KNOWL('ec.q.conductor',title = "conductor") }}</td>
@@ -143,13 +143,11 @@ Please enter a value or leave blank:
 <input type='text' name='list_bad_red' example="2,3,5" size=5></td><td><span class="formexample"> e.g. 2,3,5 </span></td>          
 </tr>
   </table>
-</form>
 <p></p>
 
 <h3> Modular invariants </h3>
 
-<form>
-  <table>
+<table>
     <tr>
       <td align='right'>{{ KNOWL('ec.q.modular_degree',title="Modular degree") }}</td>
       <td><input type='text' name='mod_deg' example="4" size=10 /></td>
@@ -171,7 +169,7 @@ Please enter a value or leave blank:
 
     </tr>
   </table>
-</form>
+
 
 <p></p>
 
@@ -187,33 +185,36 @@ Please enter a value or leave blank:
 <td align='right'>{{KNOWL('ec.q.non-surjective_prime', title='non-surjective primes')}}</td>
 <td><select name='surj_quantifier'><option></option><option value='include'>include</option><option value='exactly'>exactly</option></select>
 <input type='text' name='nonsurj_primes' size=5 example='2,3'></td>
-<td align='left'><span class="formexample"> e.g. 2,3</span></td>
+<td><span class="formexample"> e.g. 2,3</span></td>
 </tr>	
+</table>
 
+<table id="mod_p_images">
 <tr>
-<td align='right'>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} 
-<td><input type='text' name='rouse_label' size=5 example= X181e></td><td><span class="formexample">e.g. X181e</span></td>
+<td>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} <input type='text' name='rouse_label' size=5 example= X181e><span class="formexample">  e.g. X181e</span>
 </td>
 </tr>
-
-
 <tr>
-<td colspan=3>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width="122" style="width: 122px">
+<td>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width="122" style="width: 122px">
         <option ></option>
     {% for image in info.list_image_modp %}
         <option value='{{image}}'>{{info.dict_image_modp[image]}}</option>
     {% endfor %}
 </select> 
+</td><td>
+<button type='button' id='more_modp_button'>more</button>
 </td>
 </tr>
 
+<table>
 <tr>
-<td colspan=2>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime' size=5 example= 5> has label <input type='text' name='label_image_modp' size=3 example= B.1.1></td><td><span class="formexample">e.g. 3, B.1.1</span></td>
+<td>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime2' size=5 example= 5> has label <input type='text' name='label_image_modp' size=3 example= B.1.1>  <span class="formexample">e.g. 3, B.1.1</span>
+</td>
 </tr>
 </table>
 
 
-<p colspan=3>Maximum number of curves to display <input type='text' name='count' value={{count}} size=10 ></p>
+<p>Maximum number of curves to display <input type='text' name='count' value={{count}} size=10 ></p>
 
 
 <p></p>
@@ -223,5 +224,18 @@ Please enter a value or leave blank:
 
 
 {% endif %}
+<script>
+//Try to get tbody first with jquery children. works faster!
+var tbody = $('#mod_p_images').children('tbody');
 
+//Then if no tbody just select your table 
+var table = tbody.length ? tbody : $('#mod_p_images');
+
+
+$('#more_modp_button').click(function(){
+    //Add row
+    table.append("<tr><td align='right'> at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width='122' style='width: 122px'><option ></option>{% for image in info.list_image_modp %}<option value='{{image}}'>{{info.dict_image_modp[image]}}</option>{% endfor %}</select></td></tr>");
+    return false;
+})
+</script>
 {% endblock %}
