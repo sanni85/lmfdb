@@ -77,25 +77,39 @@ A <a href={{url_for('.random_curve')}}>random elliptic curve</a> from the databa
 <h2> Search </h2>
 Please enter a value or leave blank:
 <p></p>
+
+<h3> Invariants </h3>
 <form>
   <table>
     <tr>
-      <td>{{ KNOWL('ec.q.conductor',title = "conductor") }}</td>
+      <td align='right'>{{ KNOWL('ec.q.conductor',title = "conductor") }}</td>
      <td>
        <input type='text' name='conductor' example="389" size=10 value="{{conductor}}" />
      </td>
      <td><span class="formexample"> e.g. 389 or 100-200</span></td>
 
-      <td>{{ KNOWL('ec.q.j_invariant',title = "j-invariant") }}</td>
+      <td align='right'>{{ KNOWL('ec.q.j_invariant',title = "j-invariant") }}</td>
      <td>
        <input type='text' name='jinv' example=1728 size=10 value="{{jinv}}" />
      </td>
      <td><span class="formexample"> e.g. 1728 or -4096/11</span></td>
     </tr>
-
-
+ <tr>
+      <td align='right'>{{ KNOWL('ec.endomorphism_ring',title="endomorphisms") }}</td>
+	<td>
+           <select name='cm'>
+{% if optimal=='on' %}
+           <option value="">without CM</option>
+           <option value="on" selected="yes">CM</option>
+{% else %}
+           <option value="">without CM</option>
+           <option value="on">CM</option>
+{% endif %}
+         </select>
+      </td>
+    </tr>
    <tr>
-   <td>
+   <td align='right'>
     {{ KNOWL('ec.q.rank',title="rank") }}
     </td>
            <td>
@@ -103,10 +117,19 @@ Please enter a value or leave blank:
            </td>
            <td><span class="formexample"> e.g. 0 </span>
            </td>
+	<td align='right'>
+          {{ KNOWL('ec.q.analytic_sha_order',title="analytic order of &#1064;") }}
+          </td>
+          <td>
+          <input type='text' name='sha' example="4" size=10 />
+          </td>
+          <td>
+          <span class="formexample"> e.g. 4 </span>
+          </td>
     </tr>
 
     <tr>
-          <td>
+          <td align='right'>
           {{ KNOWL('ec.q.torsion_order',title="torsion order") }}
           </td>
           <td>
@@ -116,7 +139,7 @@ Please enter a value or leave blank:
           <span class="formexample"> e.g. 2 </span>
           </td>
 
-          <td>
+          <td align='right'>
           {{ KNOWL('ec.q.torsion_subgroup',title="torsion structure") }}
           </td>
           <td>
@@ -126,33 +149,55 @@ Please enter a value or leave blank:
           <span class="formexample"> e.g. [2,4] </span>
           </td>
       </tr>
-
-    <tr>
-          <td>
-          {{ KNOWL('ec.q.analytic_sha_order',title="analytic order of &#1064;") }}
-          </td>
-          <td>
-          <input type='text' name='sha' example="4" size=10 />
-          </td>
-          <td>
-          <span class="formexample"> e.g. 4 </span>
-          </td>
-      </tr>
-
 <tr>
-<td align=left>{{KNOWL('ec.q.surjective_prime', title='surjective primes')}} 
-   <td><input type='text' name='surj_primes' size=10 example='2,3'></td>
-<td><span class="formexample"> e.g. 2,3</span></td>
-<td align=left>
-{{KNOWL('ec.q.non-surjective_prime', title='non-surjective primes')}} 
-  <select name='surj_quantifier'>
-  <option value='include'>include</option>
-  <option value='exactly'>exactly</option>
-  </select>
-</td>
-<td><input type='text' name='nonsurj_primes' size=10 example='2,3'></td>
-<td><span class="formexample"> e.g. 2,3</span></td>
+<td align='right'>{{ KNOWL('ec.q.bad_reduction_primes',title="primes of bad reduction") }}</td>
+<td><input type='text' name='list_bad' example="2,3,5" size=5><select name='surj_quantifier'><option value='include'>include</option><option value='exactly'>exactly</option></select></td>
+<td><span class="formexample"> e.g. 2,3,5 </span></td>          
 </tr>
+  </table>
+</form>
+<p></p>
+
+<h3> Modular invariants </h3>
+
+<form>
+  <table>
+    <tr>
+      <td align='right'>{{ KNOWL('ec.q.modular_degree',title="Modular degree") }}</td>
+      <td><input type='text' name='mod_deg' example="4" size=10 /></td>
+       <td><span class="formexample"> e.g. 4 </span></td>
+</tr><tr>
+      <td align='right'>{{ KNOWL('ec.q.optimal',title="Optimal only") }}</td>
+      <td>
+         <select name='optimal'>
+{% if optimal=='on' %}
+           <option value="">No</option>
+           <option value="on" selected="yes">Yes</option>
+{% else %}
+           <option value="">No</option>
+           <option value="on">Yes</option>
+{% endif %}
+         </select>
+      </td>
+
+    </tr>
+  </table>
+</form>
+
+<p></p>
+
+<h3> Galois Representation </h3>
+<form>
+  <table>
+  <tr>
+	<td align='right'>{{KNOWL('ec.q.surjective_prime', title='surjective primes')}}</td>
+	   <td><input type='text' name='surj_primes' size=10 example='2,3'></td>
+	   <td><span class="formexample"> e.g. 2,3</span></td>
+	<td align='right'>{{KNOWL('ec.q.non-surjective_prime', title='non-surjective primes')}}
+           <select name='surj_quantifier'><option value='include'>include</option><option value='exactly'>exactly</option></select></td>
+		<td><input type='text' name='nonsurj_primes' size=10 example='2,3'></td>
+		<td><span class="formexample"> e.g. 2,3</span></td>
+  </tr>	
 
 <tr>
 <td colspan=4>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} X <input type='text' name='residue_prime' size=3 example= 181><input type='text' name='residue_prime' size=3 example=e > e.g. X181e
@@ -178,21 +223,14 @@ Please enter a value or leave blank:
 </select>.<input type='text' name='residue_prime' size=3 example= 2>.<input type='text' name='residue_prime' size=3 example= 3>.<input type='text' name='residue_prime' size=3 example= 2> e.g. 3, B.1.1
 </td>
 </tr>
-    <tr>
-      <td>{{ KNOWL('ec.q.optimal',title="Optimal only") }}</td>
-      <td>
-         <select name='optimal'>
-{% if optimal=='on' %}
-           <option value="">No</option>
-           <option value="on" selected="yes">Yes</option>
-{% else %}
-           <option value="">No</option>
-           <option value="on">Yes</option>
-{% endif %}
-         </select>
-      </td>
-    </tr>
 
+
+
+
+  </table>
+<p></p>
+<td><button type='submit' value='Search'>Search</button></td>
+</form>
 
 <tr>
 <td align=left colspan=4>Maximum number of curves to display <input type='text' name='count' value={{count}} size=10 />
