@@ -205,7 +205,7 @@ Please enter a value or leave blank:
 
 <table id="modp_labels">
 <tr>
-<td colspan=3>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime2' size=5 example= 3> has label <input type='text' name='label_image_modp' size=3 example= B.1.1><span class="formexample">e.g. 3,B.1.1</span>
+<td colspan=3>{{KNOWL('ec.q.galois_rep_image', title='Image')}} of the {{KNOWL('ec.galois_rep', title='mod $p$ Galois representation')}} at <input type='text' name='residue_prime2' size=5 example= 3> has label <input type='text' name='label_image_modp' size=3 example= B.1.1><span class="formexample"> e.g. 3,B.1.1</span>
 </td><td>
 <button type='button' id='more_modp_label_button'>add a prime</button>
 </td>
@@ -214,7 +214,7 @@ Please enter a value or leave blank:
 
 <table>
 <tr>
-<td>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} <input type='text' name='rouse_label' size=5 example= X181e><span class="formexample">  e.g. X181e</span>
+<td colspan=3>Image of the {{KNOWL('ec.galois_rep',title='2-adic representation')}} has {{KNOWL('ec.rouse_label', title='Rouse label')}} <input type='text' name='rouse_label' size=5 example= X181e><span class="formexample">  e.g. X181e</span>
 </td>
 </tr>
 </table>
@@ -239,9 +239,14 @@ var table = tbody.length ? tbody : $('#mod_p_images');
 
 $('#more_modp_button').click(function(){
     //Add row
-    table.append("<tr><td align='right'> at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width='122' style='width: 122px'><option ></option>{% for image in info.list_image_modp %}<option value='{{image}}'>{{info.dict_image_modp[image]}}</option>{% endfor %}</select></select> <span class='formexample'>e.g. 5 or 3,5; Borel</span></td></tr>");
+    table.append("<tr><td align='right' colspan=3> at <input type='text' name='residue_prime' size=5 example= 5> is contained in <select name='image_modp' width='122' style='width: 122px'><option ></option>{% for image in info.list_image_modp %}<option value='{{image}}'>{{info.dict_image_modp[image]}}</option>{% endfor %}</select></select> <span class='formexample'>e.g. 5 or 3,5; Borel</span></td><td><button type='button' onclick='deleteRow(this)'>remove</button></td></tr>");
     return false;
 })
+
+function deleteRow(btn) {
+  var row = btn.parentNode.parentNode;
+  row.parentNode.removeChild(row);
+}
 </script>
 
 <script>
@@ -254,8 +259,9 @@ var table1 = tbody1.length ? tbody1 : $('#modp_labels');
 
 $('#more_modp_label_button').click(function(){
     //Add row
-    table1.append("<tr><td align='right'> has label <input type='text' name='label_image_modp' size=3 example= B.1.1><span class='formexample'>e.g. 3,B.1.1</span></td></tr>");
+    table1.append("<tr><td align='right'colspan=3>at <input type='text' name='residue_prime2' size=5 example= 3> has label <input type='text' name='label_image_modp' size=3 example= B.1.1><span class='formexample'> e.g. 3,B.1.1</span></td><td><button type='button' onclick='deleteRow(this)'>remove</button></td></tr>");
     return false;
 })
 </script>
+
 {% endblock %}
