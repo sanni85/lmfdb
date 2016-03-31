@@ -83,7 +83,7 @@ Please enter a value or leave blank:
   <table>
     <tr>
       <td align='right'>{{ KNOWL('ec.q.conductor',title = "conductor") }}</td>
-     <td>
+<td><select name='conductor_quantifier'><option></option><option value='is_equal'>is</option><option value='divides'>divides</option></select>
        <input type='text' name='conductor' example="389" size=10 value="{{conductor}}" />
      </td>
      <td><span class="formexample"> e.g. 389 or 100-200</span></td>
@@ -95,10 +95,6 @@ Please enter a value or leave blank:
      <td><span class="formexample"> e.g. 1728 or -4096/11</span></td>
     </tr>
 
-<tr><td align='right'>{{ KNOWL('ec.endomorphism_ring',title="endomorphisms") }}</td><td><select name='cm'> <option></option> <option value="no_cm">without CM</option> <option value="cm">CM</option></select></td><td></td>
-<td colospan=4 align='right'>semistable</td><td><select name='semistable'> <option></option> <option value="yes">yes</option> <option value="no">no</option></select></td>
-</tr>
-
 <tr>
 <td align='right'>{{ KNOWL('ec.q.rank',title="rank") }}</td>
            <td>
@@ -109,7 +105,7 @@ Please enter a value or leave blank:
 	<td align='right'>
           {{ KNOWL('ec.q.analytic_sha_order',title="analytic order of &#1064;") }}
           </td>
-          <td>
+          <td><select name='sha_quantifier'><option></option><option value='is_equal'>is</option><option value='divides'>divides</option></select>
           <input type='text' name='sha' example="4" size=10 />
           </td>
           <td>
@@ -140,20 +136,15 @@ Please enter a value or leave blank:
       </tr>
 <tr>
 <td align='right'>{{ KNOWL('ec.q.bad_reduction_primes',title="primes of bad reduction") }}</td>
-<td><select name='bad_red_quantifier'><option></option><option value='include'>include</option><option value='exactly'>exactly</option><option value='exclude'>exclude</option></select>
-<input type='text' name='list_bad_red' example="2,3,5" size=5></td><td><span class="formexample"> e.g. 2,3,5 </span></td>          
+<td><select name='bad_red_quantifier'><option></option><option value='include'>include</option><option value='exactly'>exactly</option><option value='exclude'>exclude</option></select><input type='text' name='list_bad_red' example="2,3,5" size=10></td><td><span class="formexample"> e.g. 2,3,5 </span></td>
+<td align='right'>semistable</td><td><select name='semistable'> <option></option> <option value="yes">yes</option> <option value="no">no</option></select></td>
 </tr>
-  </table>
-<p></p>
 
-<h3> Modular invariants </h3>
 
-<table>
     <tr>
       <td align='right'>{{ KNOWL('ec.q.modular_degree',title="Modular degree") }}</td>
-      <td><input type='text' name='mod_deg' example="4" size=10 /></td>
+      <td><select name='mod_deg_quantifier'><option></option><option value='is_equal'>is</option><option value='divides'>divides</option></select><input type='text' name='mod_deg' example="4" size=10 /></td>
        <td><span class="formexample"> e.g. 4 </span></td>
-</tr><tr>
       <td align='right'>{{ KNOWL('ec.q.optimal',title="Optimal only") }}</td>
       <td>
          <select name='optimal'>
@@ -169,6 +160,13 @@ Please enter a value or leave blank:
       </td>
 
     </tr>
+
+
+<tr><td align='right'>{{ KNOWL('ec.cm',title="CM") }}</td><td><select name='cm'> <option></option> <option value="no_cm">no</option> <option value="cm">yes</option></select></td><td></td>
+
+</tr>
+
+
   </table>
 
 
@@ -181,8 +179,7 @@ Please enter a value or leave blank:
 <td align='right'>{{KNOWL('ec.q.surjective_prime', title='surjective primes')}}</td>
 <td><input type='text' name='surj_primes' size=5 example='2,3'></td>
 <td><span class="formexample"> e.g. 2,3</span></td>
-</tr>
-<tr>
+<td></td>
 <td align='right'>{{KNOWL('ec.q.non-surjective_prime', title='non-surjective primes')}}</td>
 <td><select name='surj_quantifier'><option></option><option value='include'>include</option><option value='exactly'>exactly</option></select>
 <input type='text' name='nonsurj_primes' size=5 example='2,3'></td>
