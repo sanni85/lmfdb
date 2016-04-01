@@ -74,26 +74,22 @@ A <a href={{url_for('.random_curve')}}>random elliptic curve</a> from the databa
 </span>
 </form>
 
-<h2> Search </h2>
-Please enter a value or leave blank:
-<p></p>
-<form>
-<h3 color='green'> Invariants </h3>
+<h2> Search elliptic curves over $\Q$
 
-  <table>
-    <tr>
+<form>
+<button type='submit' value='Search'>Search</button></h2>
+<h5> Invariants </h5>
+<table>
+<tr>
       <td align='right'>{{ KNOWL('ec.q.conductor',title = "conductor") }}</td>
-<td><select name='conductor_quantifier'><option></option><option value='is_equal'>equals to</option><option value='divisible'>divisible by</option></select>
+<td><select name='conductor_quantifier'><option value='is_equal' selected='is_equal'>equals</option><option value='divisible'>divisible by</option></select>
        <input type='text' name='conductor' example="389" size=8 value="{{conductor}}" />
      </td>
      <td><span class="formexample"> e.g. 389 or 100-200</span></td>
-
-      <td align='right'>{{ KNOWL('ec.q.j_invariant',title = "j-invariant") }}</td>
-     <td>
-       <input type='text' name='jinv' example=1728 size=10 value="{{jinv}}" />
-     </td>
-     <td><span class="formexample"> e.g. 1728 or -4096/11</span></td>
-    </tr>
+<td align='right'>{{ KNOWL('ec.q.j_invariant',title = "j-invariant") }}</td>
+<td><input type='text' name='jinv' example=1728 size=10 value="{{jinv}}" /></td>
+<td><span class="formexample"> e.g. 1728 or -4096/11</span></td>
+</tr>
 
 <tr>
 <td align='right'>{{ KNOWL('ec.q.rank',title="rank") }}</td>
@@ -105,7 +101,7 @@ Please enter a value or leave blank:
 	<td align='right'>
           {{ KNOWL('ec.q.analytic_sha_order',title="analytic order of &#1064;") }}
           </td>
-          <td><select name='sha_quantifier'><option></option><option value='is_equal'>equals to</option><option value='divisible'>divisible by</option></select>
+          <td><select name='sha_quantifier'><option value='is_equal' selected='is_equal'>equals</option><option value='divisible'>divisible by</option></select>
           <input type='text' name='sha' example="4" size=8 />
           </td>
           <td>
@@ -143,7 +139,7 @@ Please enter a value or leave blank:
 
     <tr>
       <td align='right'>{{ KNOWL('ec.q.modular_degree',title="Modular degree") }}</td>
-      <td><select name='mod_deg_quantifier'><option></option><option value='is_equal'>equals to</option><option value='divisible'>divisible by</option></select><input type='text' name='mod_deg' example="4" size=8 /></td>
+      <td><select name='mod_deg_quantifier'><option value='is_equal' selected='is_equal'>equals</option><option value='divisible'>divisible by</option></select><input type='text' name='mod_deg' example="4" size=8 /></td>
        <td><span class="formexample"> e.g. 4 </span></td>
       <td align='right'>{{ KNOWL('ec.q.optimal',title="Optimal only") }}</td>
       <td>
@@ -160,20 +156,14 @@ Please enter a value or leave blank:
       </td>
 
     </tr>
-
-
 <tr><td align='right'>{{ KNOWL('ec.cm',title="CM") }}</td><td><select name='cm'> <option></option> <option value="no_cm">no</option> <option value="cm">yes</option></select></td><td></td>
-
 </tr>
+</table>
 
 
-  </table>
 
+<h5> Galois Representation </h5>
 
-<p></p>
-
-<h3> Galois Representation </h3>
-<form>
 <table>
 <tr>
 <td align='right'>{{KNOWL('ec.q.surjective_prime', title='surjective primes')}}</td>
@@ -221,7 +211,7 @@ Please enter a value or leave blank:
 
 
 <p></p>
-<td><button type='submit' value='Search'>Search</button></td>
+<button type='submit' value='Search'>Search</button>
 </form>
 
 
