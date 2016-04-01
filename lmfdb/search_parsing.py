@@ -519,3 +519,30 @@ def parse_start(info, default=0):
     except (KeyError, ValueError, TypeError):
         pass
     return start
+
+
+
+
+
+@search_parser(clean_info=True) # see SearchParser.__call__ for actual arguments when calling
+def parse_ints_divisible(inp, query, qfield):
+    format_ok = LIST_POSINT_RE.match(inp)
+    if format_ok:
+        primes = int(inp)
+        format_ok = ZZ(primes).is_prime(proof=False)
+        if format_ok is True:
+            query[qfield] = {"$mod": [ primes, 0 ] }
+    else:
+        raise ValueError("It needs to be a prime (such as 5), or a comma-separated list of primes (such as 2,3,11).")
+
+def parse_singleton_divisible(inp, query, qfield):
+    format_ok = LIST_POSINT_RE.match(inp)
+    format_ok = ZZ(int(inp)).is_prime(proof=False)
+    if format_ok:
+       primes = int(inp)
+       format_ok = [ZZ(int(inp)).is_prime(proof=False)]
+    if format_ok:
+        query[qfield] = {"$mod": [ primes, 0 ] }
+    else:
+        raise ValueError("It needs to be a prime (such as 5), or a comma-separated list of primes (such as 2,3,11).")
+

@@ -17,7 +17,7 @@ from lmfdb.elliptic_curves.isog_class import ECisog_class
 
 from lmfdb.elliptic_curves.web_ec import WebEC, parse_points, match_lmfdb_label, match_lmfdb_iso_label, match_cremona_label, split_lmfdb_label, split_lmfdb_iso_label, split_cremona_label, weierstrass_eqn_regex, short_weierstrass_eqn_regex, class_lmfdb_label, class_cremona_label, curve_lmfdb_label, curve_cremona_label
 
-from lmfdb.search_parsing import split_list, parse_rational, parse_ints, parse_bracketed_posints, parse_primes, parse_count, parse_start
+from lmfdb.search_parsing import split_list, parse_rational, parse_ints, parse_bracketed_posints, parse_primes, parse_count, parse_start, parse_ints_divisible
 
 from lmfdb.elliptic_curves.rouse_labels_list import rouse_list
 
@@ -239,7 +239,20 @@ def elliptic_curve_search(**args):
 
     try:
         parse_rational(info,query,'jinv','j-invariant')
-        parse_ints(info,query,'conductor')
+
+
+
+        if info.get('conductor_quantifier') == 'divisible':
+            parse_ints_divisible(info, query, 'conductor')
+        else:
+            parse_ints(info,query,'conductor')
+        print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx', query
+
+#        parse_ints(info,query,'conductor')
+
+
+
+
         parse_ints(info,query,'torsion','torsion order')
         parse_ints(info,query,'rank')
         parse_ints(info,query,'sha','analytic order of &#1064;')
