@@ -298,7 +298,7 @@ class WebDirichlet(WebCharObject):
         if self.modlabel:
             self.modulus = m = int(self.modlabel)
             self.H = H = DirichletGroup_conrey(m)
-        self.credit = 'Sage'
+        self.credit = 'SageMath'
         self.codelangs = ('pari', 'sage')
 
     def _char_desc(self, c, mod=None, prim=None):
@@ -454,7 +454,7 @@ class WebHecke(WebCharObject):
         #self.number = lmfdb_label2hecke(self.numlabel)
         # make this canonical
         self.modlabel = self.ideal2label(self._modulus)
-        self.credit = "Pari, Sage"
+        self.credit = "Pari, SageMath"
         self.codelangs = ('pari', 'sage')
         self.parity = None
         logger.debug('###### WebHeckeComputed')
@@ -599,7 +599,7 @@ class WebHecke(WebCharObject):
 class WebCharFamily(WebCharObject):
     """ compute first groups """
     _keys = [ 'title', 'credit', 'codelangs', 'type', 'nf', 'nflabel',
-            'nfpol', 'codeinit', 'headers', 'contents' ]   
+            'nfpol', 'code', 'headers', 'contents' ]   
     headers = [ 'modulus', 'order', 'structure', 'first characters' ]
 
     def __init__(self, **args):
@@ -834,11 +834,11 @@ class WebChar(WebCharObject):
     def friends(self):
         f = []
         cglink = url_character(type=self.type,number_field=self.nflabel,modulus=self.modlabel)
-        f.append( ("Character group", cglink) )
+        f.append( ("character group", cglink) )
         if self.nflabel:
             f.append( ('Number Field', '/NumberField/' + self.nflabel) )
-        if self.type == 'Dirichlet' and self.chi.is_primitive():
-            f.append( ('L function', '/L'+ url_character(type=self.type,
+        if self.type == 'Dirichlet' and self.chi.is_primitive() and self.conductor < 10000:
+            f.append( ('L-function', '/L'+ url_character(type=self.type,
                                     number_field=self.nflabel,
                                     modulus=self.modlabel,
                                     number=self.numlabel) ) )
@@ -886,7 +886,7 @@ class WebDirichletGroup(WebCharGroup, WebDirichlet):
     @property
     def codeinit(self):
         return {
-                'sage': 'H = DirichletGroup_conrey(%i)\n'%(self.modulus),
+                'sage': 'H = DirichletGroup_conrey(%i)'%(self.modulus),
                 'pari': 'g = idealstar(,%i,2)'%(self.modulus)
                 }
 
@@ -914,7 +914,7 @@ class WebSmallDirichletGroup(WebDirichletGroup):
         if self.modlabel:
             self.modulus = m = int(self.modlabel)
             self.H = Integers(m).unit_group()
-        self.credit = 'Sage'
+        self.credit = 'SageMath'
         self.codelangs = ('pari', 'sage')
 
     @property
@@ -1019,12 +1019,11 @@ class WebSmallDirichletCharacter(WebChar, WebDirichlet):
             return { 'sage': 'kronecker_character(%i)'%m }
         return None
 
-
     @property
     def codegaloisorbit(self):
         return { 'sage': 'chi_sage.galois_orbit()',
                  'pari': [
-                     '[mod,num,order] = [%i,%i,%i]'%(self.modulus,self.num,self.order),
+                     '[mod,num,order] = [%i,%i,%i]'%(self.modulus,self.number,self.order),
                      '[Mod(num,mod)^k | k<-[1..order-1], gcd(k,order)==1]',
                      #'order = charorder(g,chi)',
                      #'[ chi*k % order | k <-[1..order-1], gcd(k,order)==1 ]'
@@ -1132,7 +1131,9 @@ class WebDirichletCharacter(WebSmallDirichletCharacter):
 
     def jacobi_sum(self, val):
         mod, num = self.modulus, self.number
-        val = int(val[0])
+        val = int(val)
+        if gcd(mod, val) > 1:
+            raise Warning ("n must be coprime to the modulus : %s"%mod)
         psi = self.H[val]
         chi = self.chi.sage_character()
         psi = psi.sage_character()
@@ -1194,7 +1195,7 @@ class WebHeckeExamples(WebHecke):
                      #'4.4.2403.1',
                      #'4.2.283.1',
                      ]
-        self.credit = "Pari, Sage"
+        self.credit = "Pari, SageMath"
         self.codelangs = ('pari', 'sage')
 
     @property
@@ -1224,7 +1225,7 @@ class WebHeckeFamily(WebCharFamily, WebHecke):
 
     def _compute(self):
         self.k = self.label2nf(self.nflabel)
-        self.credit = 'Pari, Sage'
+        self.credit = 'Pari, SageMath'
         self.codelangs = ('pari', 'sage')
 
     def first_moduli(self, bound=200):

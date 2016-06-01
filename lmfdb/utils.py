@@ -7,6 +7,7 @@ import logging
 
 import re
 
+from random import randint
 from flask import request, make_response
 from functools import wraps
 from werkzeug.contrib.cache import SimpleCache
@@ -15,8 +16,29 @@ from copy import copy
 from werkzeug import cached_property
 from flask import url_for
 
-cache = SimpleCache()
+def random_object_from_collection(collection):
+    import pymongo
+    n = collection.rand.count()
+    if n:
+        return collection.find_one({'_id':collection.rand.find_one({'num':randint(1,n)})['_id']})
+    if pymongo.version_tuple[0] < 3:
+        return collection.aggregate({ '$sample': { 'size': int(1) } }, cursor = {} ).next()
+    else:
+        # Changed in version 3.0: The aggregate() method always returns a CommandCursor. The pipeline argument must be a list.
+        return collection.aggregate([{ '$sample': { 'size': int(1) } } ]).next()
 
+def random_value_from_collection(collection,attribute):
+    import pymongo
+    n = collection.rand.count()
+    if n:
+        return collection.find_one({'_id':collection.rand.find_one({'num':randint(1,n)})['_id']},{'_id':False,attribute:True}).get(attribute)
+    if pymongo.version_tuple[0] < 3:
+        return collection.aggregate({ '$sample': { 'size': int(1) } }, cursor = {} ).next().get(attribute) # don't both optimizing this
+    else:
+        # Changed in version 3.0: The aggregate() method always returns a CommandCursor. The pipeline argument must be a list.
+        return collection.aggregate([{ '$sample': { 'size': int(1) } }, { '$project' : {'_id':False,attribute:True}} ]).next().get(attribute)
+
+cache = SimpleCache()
 
 def cached(timeout=15 * 60, key='cache::%s::%s'):
     def decorator(f):

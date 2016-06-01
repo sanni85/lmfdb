@@ -98,6 +98,7 @@ A <a href={{url_for('.random_curve')}}>random elliptic curve</a> from the databa
            </td>
            <td><span class="formexample"> e.g. 0 </span>
            </td>
+
 	<td align='right'>
           {{ KNOWL('ec.q.analytic_sha_order',title="analytic order of &#1064;") }}
           </td>
@@ -107,6 +108,18 @@ A <a href={{url_for('.random_curve')}}>random elliptic curve</a> from the databa
           <td>
           <span class="formexample"> e.g. 4 </span>
           </td>
+
+   <td>
+    {{ KNOWL('ec.complex_multiplication',title="CM") }}
+    </td>
+     <td>
+         <select name='include_cm'>
+           <option value="include" selected="yes">include</option>
+           <option value="exclude">exclude</option>
+           <option value="only">only</option>
+         </select>
+     </td>
+
     </tr>
 
     <tr>

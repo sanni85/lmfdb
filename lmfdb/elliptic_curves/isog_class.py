@@ -147,8 +147,10 @@ class ECisog_class(object):
 
         self.friends =  [('L-function', self.lfunction_link)]
         if not self.CM:
-            self.friends += [('Symmetric square L-function', url_for("l_functions.l_function_ec_sym_page", power='2', label=self.lmfdb_iso)),
-                             ('Symmetric 4th power L-function', url_for("l_functions.l_function_ec_sym_page", power='4', label=self.lmfdb_iso))]
+            if int(N)<=300:
+                self.friends += [('Symmetric square L-function', url_for("l_functions.l_function_ec_sym_page", power='2', label=self.lmfdb_iso))]
+            if int(N)<=50:
+                self.friends += [('Symmetric cube L-function', url_for("l_functions.l_function_ec_sym_page", power='3', label=self.lmfdb_iso))]
         if newform_exists_in_db:
             self.friends +=  [('Modular form ' + self.newform_label, self.newform_link)]
 
@@ -161,7 +163,7 @@ class ECisog_class(object):
                            ]
 
 
-        self.downloads = [('Download coefficients of newform', url_for(".download_EC_qexp", label=self.lmfdb_iso, limit=100)),
+        self.downloads = [('Download coefficients of newform', url_for(".download_EC_qexp", label=self.lmfdb_iso, limit=1000)),
                          ('Download stored data for all curves', url_for(".download_EC_all", label=self.lmfdb_iso))]
 
         if self.lmfdb_iso == self.iso:
@@ -173,7 +175,14 @@ class ECisog_class(object):
                       ('$\Q$', url_for(".rational_elliptic_curves")),
                       ('%s' % N, url_for(".by_conductor", conductor=N)),
                       ('%s' % iso, ' ')]
-
+        self.code = {}
+        self.code['show'] = {'sage':''} # use default show names
+        self.code['class'] = {'sage':'E = EllipticCurve("%s1")\n'%(self.lmfdb_iso) + 'E.isogeny_class()\n'}
+        self.code['curves'] = {'sage':'E.isogeny_class().curves'}
+        self.code['rank'] = {'sage':'E.rank()'}
+        self.code['q_eigenform'] = {'sage':'E.q_eigenform(10)'}
+        self.code['matrix'] = {'sage':'E.isogeny_class().matrix()'}
+        self.code['plot'] = {'sage':'E.isogeny_graph().plot(edge_labels=True)'}
 
 def make_graph(M):
     """

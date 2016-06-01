@@ -8,8 +8,8 @@ ASC = pymongo.ASCENDING
 import flask
 from lmfdb import base
 from lmfdb.base import app, getDBConnection
-from flask import render_template, render_template_string, request, abort, Blueprint, url_for, make_response
-from lmfdb.utils import ajax_more, image_src, web_latex, to_dict, coeff_to_poly, pol_to_html, make_logger
+from flask import render_template, render_template_string, request, abort, Blueprint, url_for, redirect
+from lmfdb.utils import ajax_more, image_src, web_latex, to_dict, coeff_to_poly, pol_to_html, make_logger, random_object_from_collection
 from lmfdb.search_parsing import parse_galgrp, parse_ints, parse_count, parse_start, clean_input
 from sage.all import ZZ, var, PolynomialRing, QQ
 from lmfdb.local_fields import local_fields_page, logger
@@ -44,8 +44,29 @@ def group_display_shortC(C):
         return group_display_short(nt[0], nt[1], C)
     return gds
 
-LIST_RE = re.compile(r'^(\d+|(\d+-\d+))(,(\d+|(\d+-\d+)))*$')
 
+def lf_knowl_guts(label, C):
+    f = C.localfields.fields.find_one({'label':label})
+    ans = 'Local number field %s<br><br>'% label
+    ans += 'Extension of $\Q_{%s}$ defined by %s<br>'%(str(f['p']),web_latex(coeff_to_poly(f['coeffs'])))
+    GG = f['gal']
+    ans += 'Degree: %s<br>' % str(GG[0])
+    ans += 'Ramification index $e$: %s<br>' % str(f['e'])
+    ans += 'Residue field degree $f$: %s<br>' % str(f['f'])
+    ans += 'Discriminant ideal:  $(p^{%s})$ <br>' % str(f['c'])
+    ans += 'Galois group $G$: %s<br>' % group_display_knowl(GG[0], GG[1], C)
+    ans += '<div align="right">'
+    ans += '<a href="%s">%s home page</a>' % (str(url_for("local_fields.by_label", label=label)),label)
+    ans += '</div>'
+    return ans
+
+def local_field_data(label):
+    C = getDBConnection()
+    return lf_knowl_guts(label, C)
+
+@app.context_processor
+def ctx_local_fields():
+    return {'local_field_data': local_field_data}
 
 @local_fields_page.route("/")
 def index():
@@ -234,6 +255,11 @@ def printquad(code, p):
 def search_input_error(info, bread):
     return render_template("lf-search.html", info=info, title='Local Field Search Input Error', bread=bread)
 
+@local_fields_page.route("/random")
+def random_field():
+    label = random_object_from_collection(base.getDBConnection().localfields.fields)['label']
+    return redirect(url_for(".by_label", label=label), 301)
+
 @local_fields_page.route("/Completeness")
 def completeness_page():
     t = 'Completeness of the local field data'
@@ -262,3 +288,4 @@ def how_computed_page():
     return render_template("single.html", kid='dq.lf.source',
                            credit=LF_credit, title=t, bread=bread, 
                            learnmore=learnmore)
+

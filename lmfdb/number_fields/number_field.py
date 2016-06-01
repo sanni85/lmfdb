@@ -14,12 +14,11 @@ from lmfdb.WebNumberField import *
 import re
 
 import sage.all
-from sage.all import ZZ, QQ, PolynomialRing, NumberField, CyclotomicField, latex, AbelianGroup, euler_phi, pari, prod
-from sage.rings.arith import primes
+from sage.all import ZZ, QQ, PolynomialRing, NumberField, CyclotomicField, latex, AbelianGroup, euler_phi, pari, prod, primes
 
 from lmfdb.transitive_group import *
 
-from lmfdb.utils import ajax_more, image_src, web_latex, to_dict, coeff_to_poly, pol_to_html, comma
+from lmfdb.utils import ajax_more, image_src, web_latex, to_dict, coeff_to_poly, pol_to_html, comma, random_object_from_collection
 from lmfdb.search_parsing import clean_input, nf_string_to_label, parse_galgrp, parse_ints, parse_signed_ints, parse_primes, parse_bracketed_posints, parse_count, parse_start, parse_nf_string
 
 NF_credit = 'the PARI group, J. Voight, J. Jones, D. Roberts, J. Kl&uuml;ners, G. Malle'
@@ -214,11 +213,7 @@ def number_field_render_webpage():
 
 @nf_page.route("/random")
 def random_nfglobal():
-    from sage.misc.prandom import randint
-    C = getDBConnection()
-    init_nf_count()
-    n = randint(0,nfields-1)
-    label = C.numberfields.fields.find()[n]['label']
+    label = random_object_from_collection( getDBConnection().numberfields.fields )['label']
     #This version leaves the word 'random' in the URL:
     #return render_field_webpage({'label': label})
     #This version uses the number field's own URL:
@@ -290,6 +285,7 @@ def render_field_webpage(args):
     data['class_group_invs'] = nf.class_group_invariants()
     data['signature'] = nf.signature()
     data['coefficients'] = nf.coeffs()
+    nf.make_code_snippets()
     D = nf.disc()
     ram_primes = D.prime_factors()
     data['disc_factor'] = nf.disc_factored_latex()
@@ -337,7 +333,10 @@ def render_field_webpage(args):
     info['downloads'] = [('worksheet', '/')]
     info['friends'] = []
     if nf.can_class_number():
-        info['friends'].append(('L-function', "/L/NumberField/%s" % label))
+        # hide ones that take a lond time to compute on the fly
+        # note that the first degree 4 number field missed the zero of the zeta function
+        if abs(D**n) < 50000000:
+            info['friends'].append(('L-function', "/L/NumberField/%s" % label))
     info['friends'].append(('Galois group', "/GaloisGroup/%dT%d" % (n, t)))
     if 'dirichlet_group' in info:
         info['friends'].append(('Dirichlet group', url_for("characters.dirichlet_group_table",
@@ -384,7 +383,7 @@ def render_field_webpage(args):
     except AttributeError:
         pass
 #    del info['_id']
-    return render_template("number_field.html", properties2=properties2, credit=NF_credit, title=title, bread=bread, friends=info.pop('friends'), learnmore=info.pop('learnmore'), info=info)
+    return render_template("number_field.html", properties2=properties2, credit=NF_credit, title=title, bread=bread, code=nf.code, friends=info.pop('friends'), learnmore=info.pop('learnmore'), info=info)
 
 
 def format_coeffs2(coeffs):
@@ -454,11 +453,16 @@ def number_field_search(**args):
         parse_ints(info,query,'class_number')
         parse_bracketed_posints(info,query,'class_group',split=False,check_divisibility='increasing')
         parse_primes(info,query,'ur_primes',name='Unramified primes',qfield='ramps',mode='complement',to_string=True)
-        if 'ram_quantifier' in info and str(info['ram_quantifier']) == 'some':
+        # modes are now contained (in), exactly, include
+        if 'ram_quantifier' in info and str(info['ram_quantifier']) == 'include':
             mode = 'append'
+            parse_primes(info,query,'ram_primes','ramified primes','ramps',mode,to_string=True)
+        elif 'ram_quantifier' in info and str(info['ram_quantifier']) == 'contained':
+            parse_primes(info,query,'ram_primes','ramified primes','ramps_all','subsets',to_string=False)
+            pass # build list
         else:
-            mode = 'exact'
-        parse_primes(info,query,'ram_primes','ramified primes','ramps',mode,to_string=True)
+            mode = 'liststring'
+            parse_primes(info,query,'ram_primes','ramified primes','ramps_all',mode)
     except ValueError:
         return search_input_error(info, bread)
     count = parse_count(info)
@@ -483,8 +487,8 @@ def number_field_search(**args):
 
     fields = C.numberfields.fields
 
-    res = fields.find(
-        query).sort([('degree', ASC), ('disc_abs_key', ASC), ('disc_sign', ASC), ('label', ASC)])
+    res = fields.find(query)
+    res = res.sort([('degree', ASC), ('disc_abs_key', ASC),('disc_sign', ASC)])
 
     if 'download' in info and info['download'] != '0':
         return download_search(info, res)
@@ -550,14 +554,14 @@ def frobs(K):
             dec = [[x, dec.count(x)] for x in vals]
             dec2 = ["$" + str(x[0]) + ('^{' + str(x[1]) + '}$' if x[1] > 1 else '$') for x in dec]
             s = '$'
-            old = 2
+            firstone = 1
             for j in dec:
-                if old == 1:
-                    s += '\: '
+                if firstone == 0:
+                    s += '{,}\,'
                 s += str(j[0])
                 if j[1] > 1:
                     s += '^{' + str(j[1]) + '}'
-                old = j[1]
+                firstone = 0
             s += '$'
             ans.append([p, s])
         else:
@@ -602,11 +606,22 @@ def download_search(info, res):
     else:
         s += 'data = ['
     s += '\\\n'
+    Qx = PolynomialRing(QQ,'x')
+    str2pol = lambda s: Qx([QQ(str(c)) for c in s.split(',')])
     for f in res:
-        wnf = WebNumberField.from_data(f)
-        cgi = wnf.class_group_invariants()
-        entry = ', '.join(
-            [str(wnf.poly()), str(wnf.disc()), str(wnf.galois_t()), str(wnf.class_group_invariants_raw())])
+        ##  We should try to avoid using database specific information here
+        ##  Kept for now for speed
+#        wnf = WebNumberField.from_data(f)
+#        entry = ', '.join(
+#            [str(wnf.poly()), str(wnf.disc()), str(wnf.galois_t()), str(wnf.class_group_invariants_raw())])
+        pol = str2pol(f['coeffs'])
+        D = decodedisc(f['disc_abs_key'], f['disc_sign'])
+        gal_t = f['galois']['t']
+        if 'class_group' in f:
+            cl = string2list(f['class_group'])
+        else:
+            cl = [-1]
+        entry = ', '.join([str(pol), str(D), str(gal_t), str(cl)])
         s += '[' + entry + ']' + ',\\\n'
     s = s[:-3]
     if dltype == 'gp':

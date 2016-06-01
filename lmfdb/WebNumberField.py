@@ -5,6 +5,7 @@ import re
 import pymongo
 import bson
 import yaml
+import hashlib
 from sage.misc.cachefunc import cached_function
 from lmfdb.utils import *
 from lmfdb.transitive_group import group_display_short, WebGaloisGroup, group_display_knowl, galois_module_knowl
@@ -152,8 +153,6 @@ class WebNumberField:
             self._data = self._get_dbdata()
         else:
             self._data = data
-        if self._data is not None:
-            self.make_code_snippets()
 
     # works with a string, or a list of coefficients
     @classmethod
@@ -162,7 +161,8 @@ class WebNumberField:
             coeffs = list2string(coeffs)
         if isinstance(coeffs, str):
             nfdb = base.getDBConnection().numberfields.fields
-            f = nfdb.find_one({'coeffs': coeffs})
+            chash = hashlib.md5(coeffs).hexdigest()
+            f = nfdb.find_one({'coeffhash': chash, 'coeffs': coeffs})
             if f is None:
                 return cls('a')  # will initialize data to None
             return cls(f['label'], f)
@@ -178,7 +178,7 @@ class WebNumberField:
         pol = PolynomialRing(QQ, 'x')(str(pol))
         pol *= pol.denominator()
         R = pol.parent()
-        pol = R(pari(pol).polredabs())
+        pol = R(pari(pol).polredbest().polredabs())
         return cls.from_coeffs([int(c) for c in pol.coefficients(sparse=False)])
 
     # If we already have the database entry
@@ -559,16 +559,9 @@ class WebNumberField:
          # read in code.yaml from numberfields directory:
         _curdir = os.path.dirname(os.path.abspath(__file__))
         self.code = yaml.load(open(os.path.join(_curdir, "number_fields/code.yaml")))
+        self.code['show'] = {'sage':'','pari':''} # use default show names
 
         # Fill in placeholders for this specific field:
         for lang in ['sage', 'pari']:
             self.code['field'][lang] = self.code['field'][lang] % self.poly()
         self.code['field']['magma'] = self.code['field']['magma'] % self.coeffs()
-
-        for k in self.code:
-            if k != 'prompt':
-                for lang in self.code[k]:
-                    self.code[k][lang] = self.code[k][lang].split("\n")
-                    # remove final empty line
-                    if len(self.code[k][lang][-1])==0:
-                        self.code[k][lang] = self.code[k][lang][:-1]

@@ -14,7 +14,7 @@ SIGNED_LIST_RE = re.compile(r'^(-?\d+|(-?\d+--?\d+))(,(-?\d+|(-?\d+--?\d+)))*$')
 FLOAT_RE = re.compile(r'((\b\d+([.]\d*)?)|([.]\d+))(e[-+]?\d+)?')
 
 from flask import flash, redirect, url_for, request
-from sage.all import ZZ, QQ, prod, euler_phi, CyclotomicField
+from sage.all import ZZ, QQ, prod, euler_phi, CyclotomicField, PolynomialRing
 from sage.misc.decorators import decorator_keywords
 
 from markupsafe import Markup
@@ -247,12 +247,25 @@ def parse_primes(inp, query, qfield, mode=None, to_string=False):
     format_ok = LIST_POSINT_RE.match(inp)
     if format_ok:
         primes = [int(p) for p in inp.split(',')]
+        primes = sorted(primes)
         format_ok = all([ZZ(p).is_prime(proof=False) for p in primes])
     if format_ok:
         if to_string:
             primes = [str(p) for p in primes]
         if mode == 'complement':
             query[qfield] = {"$nin": primes}
+        elif mode == 'liststring':
+            primes = [str(p) for p in primes]
+            query[qfield] = ",".join(primes)
+        elif mode == 'subsets':
+            # need all subsets of the list of primes 
+            powerset = [[]]
+            for p in primes:
+                powerset.extend([a+[p] for a in powerset])
+            # now set up a big $or clause
+            powerset = [','.join([str(p) for p in a]) for a in powerset]
+            powerset = [{qfield: a} for a in powerset]
+            collapse_ors(['$or', powerset], query)
         elif mode == 'exact':
             query[qfield] = sorted(primes)
         elif mode == "append":
@@ -272,7 +285,8 @@ def parse_bracketed_posints(inp, query, qfield, maxlength=None, exactlength=None
     if process is None: process = lambda x: x
     if (not BRACKETED_POSINT_RE.match(inp) or
         (maxlength is not None and inp.count(',') > maxlength - 1) or
-        (exactlength is not None and inp.count(',') != exactlength - 1)):
+        (exactlength is not None and inp.count(',') != exactlength - 1) or
+        (exactlength is not None and inp == '[]' and exactlength > 0)):
         if exactlength == 2:
             lstr = "pair of integers"
             example = "[2,3] or [3,3]"
@@ -290,6 +304,9 @@ def parse_bracketed_posints(inp, query, qfield, maxlength=None, exactlength=None
             example = "[1,2,3] or [5,6]"
         raise ValueError("It needs to be a %s in square brackets, such as %s." % (lstr, example))
     else:
+        if inp == '[]': # fixes bug in the code below (split never returns an empty list)
+            query[qfield] = []
+            return
         if check_divisibility == 'decreasing':
             # Check that each entry divides the previous
             L = [int(a) for a in inp[1:-1].split(',')]

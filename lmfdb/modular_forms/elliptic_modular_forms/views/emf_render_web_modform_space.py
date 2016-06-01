@@ -20,10 +20,11 @@ AUTHOR: Fredrik Strömberg  <fredrik314@gmail.com>
 
 """
 from flask import render_template, url_for, send_file,flash
-from lmfdb.utils import to_dict 
+from lmfdb.utils import to_dict
+from lmfdb.base import getDBConnection
 from sage.all import uniq
 from lmfdb.modular_forms.elliptic_modular_forms.backend.web_modform_space import WebModFormSpace_cached, WebModFormSpace
-from lmfdb.modular_forms.elliptic_modular_forms import EMF, emf_logger, emf, EMF_TOP
+from lmfdb.modular_forms.elliptic_modular_forms import EMF, emf_logger, emf, EMF_TOP, default_max_height
 from lmfdb.number_fields.number_field import poly_to_field_label, field_pretty
 ###
 ###
@@ -67,6 +68,7 @@ def render_web_modform_space(level=None, weight=None, character=None, label=None
         ("Character \(\chi_{%s}(%s, \cdot)\)" % (level, character), url_for('emf.render_elliptic_modular_forms', level=level, weight=weight, character=character)))
     # emf_logger.debug("friends={0}".format(friends))
     info['bread'] = bread
+    info['learnmore'] = [('History of Modular forms', url_for('holomorphic_mf_history'))]
     emf_logger.debug("info={0}".format(info))
     if info.has_key('space'):
         emf_logger.debug("space={0}".format(info['space']))        
@@ -74,8 +76,6 @@ def render_web_modform_space(level=None, weight=None, character=None, label=None
     if info.has_key('error'):
         emf_logger.debug("error={0}".format(info['error']))
     return render_template("emf_web_modform_space.html", **info)
-
-
 
     
 def set_info_for_modular_form_space(level=None, weight=None, character=None, label=None, **kwds):
@@ -92,24 +92,17 @@ def set_info_for_modular_form_space(level=None, weight=None, character=None, lab
         return info
     try:
         WMFS = WebModFormSpace_cached(level = level, weight = weight, cuspidal=True, character = character, update_from_db=True)
-        if not WMFS.has_updated():
-            stop = False
-            orbit = WMFS.character.character.galois_orbit()
-            while not stop:
-                if len(orbit) == 0:
-                    stop = True
-                    continue
-                c = orbit.pop()
-                if c.number() == WMFS.character.number:
-                    continue
-                print c.number()
-                WMFS_rep = WebModFormSpace_cached(level = level, weight = weight, cuspidal=True, character = c.number(), update_from_db=True)
-                if WMFS_rep.has_updated_from_db():
-                    stop = True
-                    info['wmfs_rep_url'] = url_for('emf.render_elliptic_modular_forms', level=level, weight=weight, character = c.number())
-                    info['wmfs_rep_number'] =  c.number()
-                    
         emf_logger.debug("Created WebModFormSpace %s"%WMFS)
+        if not WMFS.has_updated():
+            #get the representative we have in the db for this space (Galois conjugate)
+            #note that this does not use the web_object infrastructure at all right now
+            #which should be changed for sure!
+            dimension_table_name = WebModFormSpace._dimension_table_name
+            db_dim = getDBConnection()['modularforms2'][dimension_table_name]
+            rep = db_dim.find_one({'level': level, 'weight': weight, 'character_orbit': {'$in': [character]}})
+            if not rep is None and not rep['cchi'] == character: # don't link back to myself!
+                info['wmfs_rep_url'] = url_for('emf.render_elliptic_modular_forms', level=level, weight=weight, character=rep['cchi'])
+                info['wmfs_rep_number'] =  rep['cchi']
         if 'download' in info and 'tempfile' in info:
             save(WNF,info['tempfile'])
             info['filename'] = str(weight) + '-' + str(level) + '-' + str(character) + '-' + label + '.sobj'
@@ -131,6 +124,7 @@ def set_info_for_modular_form_space(level=None, weight=None, character=None, lab
         #        F = 
         #        WMFS.hecke_orbits.append(F)
         info['space'] = WMFS
+        info['max_height'] = default_max_height
 #    info['old_decomposition'] = WMFS.oldspace_decomposition()
     info['oldspace_decomposition']=''
     try: 
@@ -168,6 +162,7 @@ def set_info_for_modular_form_space(level=None, weight=None, character=None, lab
     friends.append(("Dirichlet character \(" + WMFS.character.latex_name + "\)", WMFS.character.url()))
     friends = uniq(friends)
     info['friends'] = friends
+    info['code'] = WMFS.code
     
     return info
 
