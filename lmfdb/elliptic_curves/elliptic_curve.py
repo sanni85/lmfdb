@@ -2,16 +2,16 @@
 import re
 import time
 import ast
-from pymongo import ASCENDING, DESCENDING
+from pymongo import ASCENDING
 from operator import mul
 import lmfdb.base
 from lmfdb.base import app
-from flask import Flask, session, g, render_template, url_for, request, redirect, make_response, send_file
+from flask import render_template, url_for, request, redirect, make_response, send_file
 import tempfile
 import os
 import StringIO
 
-from lmfdb.utils import ajax_more, image_src, web_latex, to_dict, web_latex_split_on_pm, comma, random_object_from_collection
+from lmfdb.utils import web_latex, to_dict, web_latex_split_on_pm, random_object_from_collection
 from lmfdb.elliptic_curves import ec_page, ec_logger
 from lmfdb.elliptic_curves.ec_stats import get_stats
 from lmfdb.elliptic_curves.isog_class import ECisog_class
@@ -19,8 +19,9 @@ from lmfdb.elliptic_curves.web_ec import WebEC, parse_points, match_lmfdb_label,
 from lmfdb.search_parsing import split_list, parse_rational, parse_ints, parse_bracketed_posints, parse_primes, parse_count, parse_start, parse_ints_divisible
 from lmfdb.elliptic_curves.rouse_labels_list import rouse_list
 
+
 import sage.all
-from sage.all import ZZ, QQ, EllipticCurve, latex, matrix, srange
+from sage.all import ZZ, QQ, EllipticCurve
 q = ZZ['x'].gen()
 
 
@@ -75,7 +76,7 @@ def learnmore_list_remove(matchstring):
 def rational_elliptic_curves(err_args=None):
     if err_args is None:
         if len(request.args) != 0:
-            return elliptic_curve_search(**request.args)
+            return elliptic_curve_search(to_dict(request.args))
         else:
             err_args = {}
             for field in ['conductor', 'jinv', 'torsion', 'rank', 'sha', 'optimal', 'torsion_structure', 'msg']:
@@ -111,7 +112,7 @@ def rational_elliptic_curves(err_args=None):
     credit = 'John Cremona and Andrew Sutherland'
     t = 'Elliptic curves over $\Q$'
     bread = [('Elliptic Curves', url_for("ecnf.index")), ('$\Q$', ' ')]
-    return render_template("browse_search.html", info=info, credit=credit, title=t, bread=bread, learnmore=learnmore_list_remove('Completeness'), **err_args)
+    return render_template("ec-index.html", info=info, credit=credit, title=t, bread=bread, learnmore=learnmore_list_remove('Completeness'), **err_args)
 
 @ec_page.route("/random")
 def random_curve():
@@ -139,12 +140,22 @@ def statistics():
     bread = [('Elliptic Curves', url_for("ecnf.index")),
              ('$\Q$', url_for(".rational_elliptic_curves")),
              ('statistics', ' ')]
-    return render_template("statistics.html", info=info, credit=credit, title=t, bread=bread, learnmore=learnmore_list())
+    return render_template("ec-stats.html", info=info, credit=credit, title=t, bread=bread, learnmore=learnmore_list())
 
 
 @ec_page.route("/<int:conductor>/")
 def by_conductor(conductor):
-    return elliptic_curve_search(conductor=conductor, **request.args)
+    info = to_dict(request.args)
+    info['bread'] = [('Elliptic Curves', url_for("ecnf.index")), ('$\Q$', url_for(".rational_elliptic_curves")), ('%s' % conductor, url_for(".by_conductor", conductor=conductor))]
+    info['title'] = 'Elliptic Curves over $\Q$ of conductor %s' % conductor
+    if len(request.args) > 0:
+        # if conductor changed, fall back to a general search
+        if 'conductor' in request.args and request.args['conductor'] != str(conductor):
+            return redirect (url_for(".rational_elliptic_curves", **request.args), 301)
+        info['title'] += ' search results'
+        info['bread'].append(('search results',''))
+    info['conductor'] = conductor
+    return elliptic_curve_search(info)
 
 
 def elliptic_curve_jump_error(label, args, wellformed_label=False, cremona_label=False, missing_curve=False):
@@ -163,20 +174,18 @@ def elliptic_curve_jump_error(label, args, wellformed_label=False, cremona_label
     return rational_elliptic_curves(err_args)
 
 
-def elliptic_curve_search(**args):
-    info = to_dict(args)
+def elliptic_curve_search(info):
 
-    if 'download' in info and info['download'] != '0':
+    if info.get('download') == '1' and info.get('Submit') and info.get('query'):
         return download_search(info)
 
-    query = {}
-    bread = [('Elliptic Curves', url_for("ecnf.index")),
-             ('$\Q$', url_for(".rational_elliptic_curves")),
-             ('Search Results', '.')]
-    if 'SearchAgain' in args:
+    if 'SearchAgain' in info:
         return rational_elliptic_curves()
 
-    if 'jump' in args:
+    query = {}
+    bread = info.get('bread',[('Elliptic Curves', url_for("ecnf.index")), ('$\Q$', url_for(".rational_elliptic_curves")), ('Search Results', '.')])
+
+    if 'jump' in info:
         label = info.get('label', '').replace(" ", "")
         m = match_lmfdb_label(label)
         if m:
@@ -299,12 +308,12 @@ def elliptic_curve_search(**args):
     credit = 'John Cremona'
     if 'non-surjective_primes' in query:
         credit += 'and Andrew Sutherland'
-    t = 'Elliptic Curves search results'
-    return render_template("search_results.html", info=info, credit=credit, bread=bread, title=t)
+    t = info.get('title','Elliptic Curves search results')
+    return render_template("ec-search-results.html", info=info, credit=credit, bread=bread, title=t)
 
 
 def search_input_error(info, bread):
-    return render_template("search_results.html", info=info, title='Elliptic Curve Search Input Error', bread=bread, learnmore=learnmore_list())
+    return render_template("ec-search-results.html", info=info, title='Elliptic Curve Search Input Error', bread=bread, learnmore=learnmore_list())
 
 ##########################
 #  Specific curve pages
@@ -395,7 +404,7 @@ def render_isogeny_class(iso_class):
         return elliptic_curve_jump_error(iso_class, {}, wellformed_label=True)
     class_data.modform_display = url_for(".modular_form_display", label=class_data.lmfdb_iso+"1", number="")
 
-    return render_template("iso_class.html",
+    return render_template("ec-isoclass.html",
                            properties2=class_data.properties,
                            info=class_data,
                            code=class_data.code,
@@ -464,7 +473,7 @@ def render_curve_webpage_by_label(label):
 
     code = data.code()
     code['show'] = {'magma':'','pari':'','sage':''} # use default show names
-    return render_template("curve.html",
+    return render_template("ec-curve.html",
                            properties2=data.properties,
                            credit=credit,
                            data=data,
@@ -498,7 +507,7 @@ def padic_data():
             info['reg'] = web_latex(reg)
     else:
         info['reg'] = "no data"
-    return render_template("padic_data.html", info=info)
+    return render_template("ec-padic-data.html", info=info)
 
 
 @ec_page.route("/download_qexp/<label>/<limit>")
@@ -520,8 +529,11 @@ def download_EC_qexp(label, limit):
 
 @ec_page.route("/download_all/<label>")
 def download_EC_all(label):
-    CDB = lmfdb.base.getDBConnection().elliptic_curves.curves
-    N, iso, number = split_lmfdb_label(label)
+    try:
+        N, iso, number = split_lmfdb_label(label)
+    except (ValueError,AttributeError):
+        return elliptic_curve_jump_error(label, {})
+    CDB = db_ec()
     if number:
         data = CDB.find_one({'lmfdb_label': label})
         if data is None:
@@ -532,30 +544,14 @@ def download_EC_all(label):
         if len(data_list) == 0:
             return elliptic_curve_jump_error(label, {})
 
-    # titles of all entries of curves
-    dump_data = []
-    titles = [str(c) for c in data_list[0]]
-    titles = [t for t in titles if t[0] != '_']
-    titles.sort()
-    dump_data.append(titles)
+    # For each curve we will output all data fields except the '_id':
+    # (This should also be possible by adding projection={'_id':False}
+    # to the find() call but on testing that timed out.)
     for data in data_list:
-        data1 = []
-        for t in titles:
-            d = data[t]
-            if t == 'ainvs':
-                data1.append(format_ainvs(d))
-            elif t in ['torsion_generators', 'torsion_structure']:
-                data1.append([eval(g) for g in d])
-            elif t == 'x-coordinates_of_integral_points':
-                data1.append(split_list(d))
-            elif t == 'gens':
-                data1.append(parse_points(d))
-            elif t in ['iso', 'label', 'lmfdb_iso', 'lmfdb_label']:
-                data1.append(str(d))
-            else:
-                data1.append(d)
-        dump_data.append(data1)
-    response = make_response('\n'.join(str(an) for an in dump_data))
+        data.pop('_id')
+
+    import json
+    response = make_response('\n\n'.join(json.dumps(d) for d in data_list))
     response.headers['Content-type'] = 'text/plain'
     return response
 
@@ -609,7 +605,8 @@ def download_search(info):
     strIO.seek(0)
     return send_file(strIO,
                      attachment_filename=filename,
-                     as_attachment=True)
+                     as_attachment=True,
+                     add_etags=False)
 
 
 #@ec_page.route("/download_Rub_data")
@@ -698,6 +695,5 @@ def ec_code(**args):
     for k in sorted_code_names:
         if lang in Ecode[k]:
             code += "\n%s %s: \n" % (Comment[lang],code_names[k])
-            for line in Ecode[k][lang]:
-                code += line + "\n"
+            code += Ecode[k][lang] + ('\n' if not '\n' in Ecode[k][lang] else '')
     return code

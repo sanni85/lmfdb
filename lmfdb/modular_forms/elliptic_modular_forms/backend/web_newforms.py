@@ -33,6 +33,8 @@ from copy import deepcopy
 from flask import url_for
 import pymongo
 
+from lmfdb.utils import web_latex_split_on_re
+
 from lmfdb.modular_forms.elliptic_modular_forms.backend.web_object import (
      WebObject,
      WebDate,
@@ -43,7 +45,6 @@ from lmfdb.modular_forms.elliptic_modular_forms.backend.web_object import (
      WebDict,
      WebList,
      WebSageObject,
-     WebNoStoreObject,
      WebPoly,
      WebProperty,
      WebProperties,
@@ -62,12 +63,9 @@ from lmfdb.modular_forms.elliptic_modular_forms.backend.web_modform_space import
 
 from lmfdb.modular_forms.elliptic_modular_forms.backend.emf_utils import (
         newform_label, 
-        space_label, 
         parse_newform_label,
         orbit_index_from_label
     )
-
-from lmfdb.utils import web_latex_split_on_re, web_latex_split_on_pm
 
 from lmfdb.modular_forms.elliptic_modular_forms import (
      emf_version,
@@ -75,19 +73,10 @@ from lmfdb.modular_forms.elliptic_modular_forms import (
      default_max_height
      )
 
-from sage.rings.power_series_poly import PowerSeries_poly
-
 from sage.all import (
-     ZZ,
      Gamma0,
-     Gamma1,
-     RealField,
      ComplexField,
-     prime_range,
-     ceil,
-     RR,
      Integer,
-     matrix,
      PowerSeriesRing,
      QQ,
      Matrix,
@@ -95,14 +84,12 @@ from sage.all import (
      latex,
      primes_first_n,
      floor,
-     loads,
      dumps,
      PolynomialRing,
-     NumberField
+     NumberField,
+     exp,
+     CC
      )
-
-from sage.matrix.matrix_integer_dense import Matrix_integer_dense
-from sage.modules.vector_integer_dense import Vector_integer_dense
 
 from sage.structure.unique_representation import CachedRepresentation
 
@@ -344,7 +331,7 @@ class WebCoeffs(WebProperty):
 
     def convert(self):
         if len(self._value) == 0:
-            pass
+            return 
         convert_to = self._convert_to
         #more types to come?
         if not convert_to in ['auto', 'poly', None]:
@@ -357,14 +344,18 @@ class WebCoeffs(WebProperty):
             if self._elt_type == 'nfrel':
                 convert_to = 'poly'
         if convert_to == 'poly':
+            elt = self._value.values()[0]
             if self._elt_type == 'nfabs':
                 emf_logger.debug("Converting from nfabs to poly!")
-                R = PolynomialRing(QQ,names=str(self._value.values()[0].parent().gen()))
+                R = PolynomialRing(QQ,names=str(elt.parent().gen()))
                 self._value  = {k: R(str(v)) for k,v in self._value.iteritems()}
             elif self._elt_type == 'nfrel':
                 emf_logger.debug("Converting from nfrel to poly!")
-                R = PolynomialRing(QQ,names=str(self._value.values()[0].parent().base_ring().gen()))
-                T = PolynomialRing(R,names=str(self._value.values()[0].parent().gen()))
+                if elt.parent().base_ring() == QQ:
+                    R = QQ
+                else:
+                    R = PolynomialRing(QQ,names=str(elt.parent().base_ring().gen()))
+                T = PolynomialRing(R,names=str(elt.parent().gen()))
                 #R = PolynomialRing(QQ, names=[str(self._value.values()[0].parent().base_ring().gen()),\
                 #                                  str(self._value.values()[0].parent().gen())])
                 self._elt_type = 'poly'
@@ -613,6 +604,14 @@ class WebNewForm(WebObject, CachedRepresentation):
         
     def q_expansion_latex(self, prec=None, name=None):
         return self._properties['q_expansion'].latex(prec, name, keepzeta=True)
+
+    def value(self, z, embedding=0):
+        if self.prec == 0:
+            return 0
+        else:
+            q = exp(2*CC.pi()*CC(0,1)*z)
+            return sum(self.coefficient_embedding(n,embedding)*q**n for n in range(self.prec))
+            
     
     def coefficient(self, n):
         r"""
@@ -644,16 +643,17 @@ class WebNewForm(WebObject, CachedRepresentation):
     def complexity_of_first_nonvanishing_coefficients(self, number_of_coefficients=4):
         return self._coefficients.coefficient_complexity(number_of_coefficients)
 
-    def coefficient_embeddings(self, prec):
+    def coefficient_embeddings(self, n):
+        r"""
+          Return all emneddings of the coefficient a(n) of self.
+        """
         if not 'values' in self._embeddings:
-            return {}
+            raise ValueError('We do not have any embeddings. for coefficient a({})'.format(n))
         else:
-            if prec < self.prec:
-                emb = {'values': {n: c for n, c in self._embeddings['values'][n].items() if n<prec},
-                           'bitprec': self._embeddings['bitprec'],
-                           'prec': prec}
+            if n < self.prec:
+                return self._embeddings['values'][n]
             else:
-                return self._embeddings
+                raise ValueError('We do not have coefficient a({})'.format(n))
 
     def coefficient_embedding(self,n,i):
         r"""
@@ -719,7 +719,7 @@ class WebNewForm(WebObject, CachedRepresentation):
           Reimplement the recursive algorithm in sage modular/hecke/module.py
           We do this because of a bug in sage with .eigenvalue()
         """
-        from sage.arith.all import factor
+        from sage.all import factor
         ev = self.eigenvalues
 
         c2 = self._coefficients.get(2)
@@ -763,7 +763,7 @@ class WebNewForm(WebObject, CachedRepresentation):
                     apr1 = self.coefficient_n_recursive(pr//p)
                     #ap = self.coefficient_n_recursive(p)
                     apr2 = self.coefficient_n_recursive(pr//(p*p))
-                    val = self.parent.character_used_in_computation.value(p)
+                    val = self.character.value(p)
                     if val == 0:
                         c = cp*apr1
                     else:
@@ -877,7 +877,10 @@ class WebNewForm(WebObject, CachedRepresentation):
         ### but at least min_prec coefficients and we desire to have want_prec
         if min_prec>=self.prec:
             raise ValueError("Need higher precision, self.prec = {}".format(self.prec))
+        if not hasattr(self, '_file_record_length'):
+            self.update_from_db()
         l = self._file_record_length
+            
         if l > max_length or self.prec > want_prec:
             nl = float(l)/float(self.prec)*float(want_prec)
             if nl > max_length:
@@ -922,7 +925,6 @@ class WebNewForm(WebObject, CachedRepresentation):
         s = s + "D = DirichletGroup({N})\n".format(
             N = self.level
             )
-        C = self.character.sage_character.parent()
         s = s + "f = {{'coefficients': {coeffs}, 'level' : {level}, 'weight': {weight}, 'character': D.Element(D,vector({elt})), 'label': '{label}','dimension': {dim}, 'is_cm': {cm} , 'cm_discriminant': {cm_disc}, 'atkin_lehner': {al}, 'explicit_formulas': {ep}}}".format(coeffs = self.coefficients(range(prec)),
             level=self.level, weight=self.weight, elt = list(self.character.sage_character.element()), label=self.hecke_orbit_label, dim=self.dimension, cm=self.is_cm, cm_disc=None if not self.is_cm else self.cm_disc , al=self.atkin_lehner_eigenvalues(),
             ep = self.explicit_formulas
@@ -953,7 +955,6 @@ class WebNewForm(WebObject, CachedRepresentation):
             prec = self.prec
         return dumps(self.coefficients(range(prec)))
 
-from lmfdb.utils import cache
 from lmfdb.modular_forms.elliptic_modular_forms.backend.emf_utils import multiply_mat_vec
 from lmfdb.modular_forms.elliptic_modular_forms import use_cache
 

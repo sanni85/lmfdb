@@ -3,24 +3,14 @@ r""" Functions to check consistency of data between elliptic curves and
 Hilbert Modular Forms databases:  """
 
 import os.path
-import gzip
-import re
 import sys
-import time
 import os
-import random
-import glob
 import pymongo
-from lmfdb.base import _init as init
-from lmfdb.base import getDBConnection
-from sage.rings.all import ZZ, QQ
-from sage.databases.cremona import cremona_to_lmfdb
-
+from sage.all import ZZ, QQ, EllipticCurve, Magma, srange, oo
 from lmfdb.base import getDBConnection
 print "getting connection"
 C= getDBConnection()
 C['admin'].authenticate('lmfdb', 'lmfdb')
-
 print "authenticating on the elliptic_curves database"
 import yaml
 pw_dict = yaml.load(open(os.path.join(os.getcwd(), os.extsep, os.extsep, os.extsep, "passwords.yaml")))
@@ -73,13 +63,10 @@ def check_ideal_labels(field_label='2.2.5.1', min_norm=0, max_norm=None, fix=Fal
     else:
         max_norm = 'infinity'
     cursor = nfcurves.find(query)
-    nfound = 0
-    nnotfound = 0
     K = HilbertNumberField(field_label)
     # NB We used to have 20 in the next line but that is insufficient
     # to distinguish the a_p for forms 2.2.12.1-150.1-a and
     # 2.2.12.1-150.1-b !
-    primes = [P['ideal'] for P in K.primes_iter(30)]
     remap = {}  # remap[old_label] = new_label
 
     for ec in cursor:
@@ -93,7 +80,6 @@ def check_ideal_labels(field_label='2.2.5.1', min_norm=0, max_norm=None, fix=Fal
                     print("conductor label %s ok" % cond_label)
         else:
             conductor = make_conductor(ec, K)
-            level = K.ideal(cond_label)
             new_cond_label = K.ideal_label(conductor)
             remap[cond_label] = new_cond_label
             fix_needed = (cond_label != new_cond_label)
@@ -289,7 +275,6 @@ def output_magma_field(field_label, K, Plist, outfilename=None, verbose=False):
     """
     if outfilename:
         outfile = file(outfilename, mode="w")
-    disc = K.discriminant()
     name = K.gen()
     pol = K.defining_polynomial()
 
@@ -476,7 +461,6 @@ def find_curve_labels(field_label='2.2.5.1', min_norm=0, max_norm=None, outfilen
     output_magma_field(field_label, K.K(), primes, outfilename)
     if verbose:
         print("...output definition of field and primes finished")
-    outfile = file(outfilename, mode="a")
 
     for nf_label in missing_curves:
         if verbose:
@@ -604,7 +588,6 @@ def find_curves(field_label='2.2.5.1', min_norm=0, max_norm=None, outfilename=No
                 print("Using %s ap from Hilbert newform" % neigs)
             Plist = [P['ideal'] for P in K.primes_iter(neigs)]
             goodP = [(i, P) for i, P in enumerate(Plist) if not P.divides(N)]
-            label = form['short_label']
             aplist = [int(form['hecke_eigenvalues'][i]) for i, P in goodP]
             curves = EllipticCurveSearch(K.K(), Plist, N, aplist)
             if not curves:
@@ -663,7 +646,6 @@ def EllipticCurveSearch(K, Plist, N, aplist):
     mag = Magma()
     # Define the number field in Magma and the list of primes
     mag.eval("Qx<x> := PolynomialRing(RationalField());\n")
-    disc = K.discriminant()
     name = K.gen()
     pol = K.defining_polynomial()
     mag.eval("Qx<x> := PolynomialRing(RationalField());\n")
@@ -722,7 +704,6 @@ def magma_output_iter(infilename):
             field_label = L.split()[1]
             K = HilbertNumberField(field_label)
             KK = K.K()
-            w = KK.gen()
 
         if 'Isogeny class' in L:
             class_label = L.split()[2]
@@ -779,16 +760,8 @@ def export_magma_output(infilename, outfilename=None, verbose=False):
         output(make_curves_line(ec) + "\n")
 
 
-def is_fundamental_discriminant(d):
-    if d in [0, 1]:
-        return False
-    if d.is_squarefree():
-        return d % 4 == 1
-    else:
-        return d % 16 in [8, 12] and (d // 4).is_squarefree()
-
-
 def rqf_iterator(d1, d2):
+    from lmfdb.WebNumberField import is_fundamental_discriminant
     for d in srange(d1, d2 + 1):
         if is_fundamental_discriminant(d):
             yield d, '2.2.%s.1' % d
