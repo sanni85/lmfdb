@@ -77,6 +77,9 @@ import modlmf
 assert modlmf
 import rep_galois_modl
 assert rep_galois_modl
+import characters_ModL
+assert characters_ModL
+
 
 # Currently uploading is not supported
 # import upload

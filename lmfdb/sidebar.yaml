@@ -212,6 +212,8 @@
          - title: Hecke
            url_for:  "characters.render_Heckewebpage"
            status: beta
+         - title: mod &#8467;
+           status: future
       colspan: onecolumn
     - title: "Galois:"
       status: future
