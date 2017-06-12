@@ -17,7 +17,7 @@ from HeckeCharacters import HeckeChar, RayClassGroup
 """
 Any character object is obtained as a double inheritance of
 
-1. a family (currently: Dirichlet/Z or Hecke/K)
+1. a family (currently: Dirichlet/Z or Hecke/K and mod l characters)
 
 2. an object type (list of groups, character group, character)
 
@@ -28,6 +28,8 @@ The code thus defines, from the generic top class WebCharObject
    - WebDirichlet
 
    - WebHecke
+
+   - WebDirichlet_modl
 
 2. the mathematical objects classes
 
@@ -50,6 +52,12 @@ and one obtains:
 - WebHeckeGroup
 
 - WebHeckeCharacter
+
+- WebDirichlet_modlFamily
+
+- WebDirichletGroup_modl
+
+- WebDirichletCharacter_modl
 
 plus the additional WebHeckeExamples which collects interesting examples
 of Hecke characters but could be converted to a yaml file [TODO]
@@ -221,6 +229,12 @@ def url_character(**kwargs):
             return url_for('characters.hc_calc',**kwargs)
         else:
             return url_for('characters.render_Heckewebpage',**kwargs)
+    elif kwargs['type'] == 'Dirichlet_modl':
+        del kwargs['type']
+        if kwargs.get('calc',None):
+            return url_for('characters_modl.dc_calc',**kwargs)
+        else:
+            return url_for('characters_modl.render_Dirichletwebpage',**kwargs)
 
 #############################################################################
 ###
@@ -600,6 +614,165 @@ class WebHecke(WebCharObject):
                 self.coltruncate = True
                 break
         return res
+
+
+
+#############################################################################
+###  Dirichlet mod l
+
+class WebDirichlet_modl(WebCharObject):
+
+    def _compute(self):
+        if self.modlabel:
+            self.modulus = m = int(self.modlabel)
+            self.H = DirichletGroup_conrey(m)
+        self.credit = 'SageMath'
+        self.codelangs = ('pari', 'sage')
+
+    def _char_desc(self, c, mod=None, prim=None):
+        """ usually num is the number, but can be a character """
+        if isinstance(c, DirichletCharacter_conrey):
+            if prim == None:
+                prim = c.is_primitive()
+            mod = c.modulus()
+            num = c.number()
+        elif mod == None:
+            mod = self.modulus
+            num = c
+            if prim == None:
+                prim = self.charisprimitive(mod,num)
+        return ( mod, num, self.char2tex(mod,num), prim)
+
+    def charisprimitive(self,mod,num):
+        if isinstance(self.H, DirichletGroup_conrey) and self.H.modulus()==mod:
+            H = self.H
+        else:
+            H = DirichletGroup_conrey(mod)
+        return H[num].is_primitive()
+
+    @property
+    def gens(self):
+        return map(int, self.H.gens())
+
+    @property
+    def generators(self):
+        #import pdb; pdb.set_trace()
+        #assert self.H.gens() is not None
+        return self.textuple(map(str, self.H.gens()))
+
+    """ for Dirichlet over Z, everything is described using integers """
+    @staticmethod
+    def char2tex(modulus, number, val='\cdot', tag=True):
+        c = r'\chi_{%s}(%s,%s)'%(modulus,number,val)
+        if tag:
+           return '\(%s\)'%c
+        else:
+           return c
+
+    group2tex = int
+    group2label = int
+    label2group = int
+
+    ideal2tex = int
+    ideal2label = int
+    label2ideal = int
+
+    """ numbering characters """
+    number2label = int
+    label2number = int
+
+    @property
+    def groupelts(self):
+        return map(self.group2tex, self.Gelts())
+
+    @cached_method
+    def Gelts(self):
+        res = []
+        m,n,k = self.modulus, 1, 1
+        while k < m and n <= self.maxcols:
+            if gcd(k,m) == 1:
+                res.append(k)
+                n += 1
+            k += 1
+        if n > self.maxcols:
+          self.coltruncate = True
+
+        return res
+
+    @staticmethod
+    def nextchar(m, n, onlyprimitive=False):
+        """ we know that the characters
+            chi_m(1,.) and chi_m(m-1,.)
+            always exist for m>1.
+            They are extremal for a given m.
+        """
+        if onlyprimitive:
+            return WebDirichlet.nextprimchar(m, n)
+        if m == 1:
+            return 2, 1
+        if n == m - 1:
+            return m + 1, 1
+        k = n+1
+        while k < m:
+            if gcd(m, k) == 1:
+                return m, k
+            k += 1
+        raise Exception("nextchar")
+
+    @staticmethod
+    def prevchar(m, n, onlyprimitive=False):
+        """ Assume m>1 """
+        if onlyprimitive:
+            return WebDirichlet.prevprimchar(m, n)
+        if n == 1:
+            m, n = m - 1, m
+        if m <= 2:
+            return m, 1  # important : 2,2 is not a character
+        k = n-1
+        while k > 0:
+            if gcd(m, k) == 1:
+                return m, k
+            k -= 1
+        raise Exception("prevchar")
+
+    @staticmethod
+    def prevprimchar(m, n):
+        if m <= 3:
+            return 1, 1
+        if n > 2:
+            Gm = DirichletGroup_conrey(m)
+        while True:
+            n -= 1
+            if n <= 1:  # (m,1) is never primitive for m>1
+                m, n = m - 1, m - 1
+                Gm = DirichletGroup_conrey(m)
+            if m <= 2:
+                return 1, 1
+            if gcd(m, n) != 1:
+                continue
+            # we have a character, test if it is primitive
+            chi = Gm[n]
+            if chi.is_primitive():
+                return m, n
+
+    @staticmethod
+    def nextprimchar(m, n):
+        if m < 3:
+            return 3, 2
+        if n < m - 1:
+            Gm = DirichletGroup_conrey(m)
+        while 1:
+            n += 1
+            if n >= m:
+                m, n = m + 1, 2
+                Gm = DirichletGroup_conrey(m)
+            if gcd(m, n) != 1:
+                continue
+            # we have a character, test if it is primitive
+            chi = Gm[n]
+            if chi.is_primitive():
+                return m, n
+
 
 #############################################################################
 ###  Family
