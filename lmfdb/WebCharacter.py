@@ -622,64 +622,151 @@ class WebHecke(WebCharObject):
 
 class WebDirichlet_modl(WebCharObject):
 
-    def _compute(self):
-        if self.modlabel:
-            self.modulus = m = int(self.modlabel)
-            self.H = DirichletGroup_conrey(m)
-        self.credit = 'SageMath'
+   def _compute(self):
+        self.characteristic 
+        self.cyc_pow
+        self.conductor
+        self.degree
+        self.field
+        self.field_label
+        self.field_poly
+        self.gal_orbit
+        self.gens_modulus
+        self.index
+        self.label
+        self.modulus
+        self.order
+        self.parity
+        self.primitive
+        self.primitive_char
+        self.val_on_gens
+        self.values
+        self.credit = "Pari, SageMath"
         self.codelangs = ('pari', 'sage')
+        self.parity = None
+        logger.debug('###### WebHeckeComputed')
 
-    def _char_desc(self, c, mod=None, prim=None):
-        """ usually num is the number, but can be a character """
-        if isinstance(c, DirichletCharacter_conrey):
-            if prim == None:
-                prim = c.is_primitive()
-            mod = c.modulus()
-            num = c.number()
-        elif mod == None:
-            mod = self.modulus
-            num = c
-            if prim == None:
-                prim = self.charisprimitive(mod,num)
-        return ( mod, num, self.char2tex(mod,num), prim)
 
-    def charisprimitive(self,mod,num):
-        if isinstance(self.H, DirichletGroup_conrey) and self.H.modulus()==mod:
-            H = self.H
-        else:
-            H = DirichletGroup_conrey(mod)
-        return H[num].is_primitive()
 
-    @property
-    def gens(self):
-        return map(int, self.H.gens())
+
 
     @property
     def generators(self):
-        #import pdb; pdb.set_trace()
-        #assert self.H.gens() is not None
-        return self.textuple(map(str, self.H.gens()))
+        """ use representative ideals """
+        return self.textuple( map(self.ideal2tex, self.G.gen_ideals() ), tag=False )
 
-    """ for Dirichlet over Z, everything is described using integers """
+    """ labeling conventions are put here """
+
     @staticmethod
-    def char2tex(modulus, number, val='\cdot', tag=True):
-        c = r'\chi_{%s}(%s,%s)'%(modulus,number,val)
+    def char2tex(c, val='\cdot',tag=True):
+        """ c is a Hecke character """
+        number = ','.join(map(str,c.exponents()))
+        s = r'\chi_{%s}(%s)'%(number,val)
         if tag:
-           return '\(%s\)'%c
+            return r'\(%s\)'%s
         else:
-           return c
+            return s
 
-    group2tex = int
-    group2label = int
-    label2group = int
+    def _char_desc(self, c, modlabel=None, prim=None):
+        """ c is a Hecke character of modulus self.modulus
+            unless modlabel is specified
+        """
+        if modlabel == None:
+            modlabel = self.modlabel
+        numlabel = self.number2label( c.exponents() )
+        if prim == None:
+            prim = c.is_primitive()
+        return (modlabel, numlabel, self.char2tex(c), prim ) 
 
-    ideal2tex = int
-    ideal2label = int
-    label2ideal = int
+    @staticmethod
+    def ideal2tex(ideal):
+        a,b = ideal.gens_two()
+        return "\(\langle %s, %s\\rangle\)"%(a._latex_(), b._latex_())
+    @staticmethod
+    def ideal2label(ideal):
+        """
+        labeling convention for ideal f:
+        use two elements representation f = (n,b)
+        with n = f cap Z an integer
+         and b an algebraic element sum b_i a^i
+        label f as n.b1+b2*a^2+...bn*a^n
+        (dot between n and b, a is the field generator, use '+' and )
+        """
+        a,b = ideal.gens_two()
+        s = '+'.join( '%sa%i'%(b,i) for i,b in enumerate(b.polynomial().list())
+                                      if b != 0 ) 
+        return "%s.%s"%(a,s.replace('+-','-').replace('/','o'))
 
-    """ numbering characters """
-    number2label = int
-    label2number = int
+    @staticmethod
+    def label2ideal(k,label):
+        """ k = underlying number field """
+        if label.count('.'):
+            n, b = label.split(".")
+        else:
+            n, b = label, '0'
+        a = k.gen()
+        # FIXME: dangerous
+        n, b = evalpolelt(n,a,'a'), evalpolelt(b,a,'a')
+        n, b = k(n), k(b)
+        return k.ideal( (n,b) )
+
+
+    """
+    underlying group contains ideal classes, but are represented
+    as exponent tuples on cyclic components (not canonical, but
+    more compact)
+    """
+    #group2tex = ideal2tex
+    #group2label = ideal2label
+    #label2group = label2ideal
+    @staticmethod
+    def group2tex(x, tag=True):
+        if not isinstance(x, tuple):
+            x = x.exponents()
+        #s =  '\cdot '.join('g_{%i}^{%i}'%(i,e) for i,e in enumerate(x) if e>0)
+        s = []
+        for i,e in enumerate(x):
+            if e > 0:
+                if e==1:
+                    s.append('g_{%i}'%i)
+                else:
+                    s.append('g_{%i}^{%i}'%(i,e))
+        s =  '\cdot '.join(s)
+        if s == '': s = '1'
+        if tag: s = '\(%s\)'%s
+        return s
+
+    @staticmethod
+    def group2label(self,x):
+        return self.number2label(x.exponents())
+
+    def label2group(self,x):
+        """ x is either an element of k or a tuple of ints or an ideal """
+        if x.count('.'):
+            x = self.label2ideal(self.k,x)
+        elif x.count('a'):
+            a = self.k.gen()
+            x = evalpolelt(x,a,'a')
+        elif x.count(','):
+            x = tuple(map(int,x.split(',')))
+        return self.G(x)
+
+    @staticmethod
+    def number2label(number):
+        return '.'.join(map(str,number))
+
+    @staticmethod
+    def label2number(label):
+        return map(int,label.split('.'))
+
+
+    @staticmethod
+    def label2nf(label):
+        return WebNumberField(label).K()
+        # FIXME: replace by calls to WebNF
+        #x = var('x')
+        #pol = evalpolelt(label,x,'x')
+        #return NumberField(pol,'a')
 
     @property
     def groupelts(self):
@@ -688,90 +775,14 @@ class WebDirichlet_modl(WebCharObject):
     @cached_method
     def Gelts(self):
         res = []
-        m,n,k = self.modulus, 1, 1
-        while k < m and n <= self.maxcols:
-            if gcd(k,m) == 1:
-                res.append(k)
-                n += 1
-            k += 1
-        if n > self.maxcols:
-          self.coltruncate = True
-
+        c = 1
+        for x in self.G.iter_exponents():
+            res.append(x)
+            c += 1
+            if c > self.maxcols:
+                self.coltruncate = True
+                break
         return res
-
-    @staticmethod
-    def nextchar(m, n, onlyprimitive=False):
-        """ we know that the characters
-            chi_m(1,.) and chi_m(m-1,.)
-            always exist for m>1.
-            They are extremal for a given m.
-        """
-        if onlyprimitive:
-            return WebDirichlet.nextprimchar(m, n)
-        if m == 1:
-            return 2, 1
-        if n == m - 1:
-            return m + 1, 1
-        k = n+1
-        while k < m:
-            if gcd(m, k) == 1:
-                return m, k
-            k += 1
-        raise Exception("nextchar")
-
-    @staticmethod
-    def prevchar(m, n, onlyprimitive=False):
-        """ Assume m>1 """
-        if onlyprimitive:
-            return WebDirichlet.prevprimchar(m, n)
-        if n == 1:
-            m, n = m - 1, m
-        if m <= 2:
-            return m, 1  # important : 2,2 is not a character
-        k = n-1
-        while k > 0:
-            if gcd(m, k) == 1:
-                return m, k
-            k -= 1
-        raise Exception("prevchar")
-
-    @staticmethod
-    def prevprimchar(m, n):
-        if m <= 3:
-            return 1, 1
-        if n > 2:
-            Gm = DirichletGroup_conrey(m)
-        while True:
-            n -= 1
-            if n <= 1:  # (m,1) is never primitive for m>1
-                m, n = m - 1, m - 1
-                Gm = DirichletGroup_conrey(m)
-            if m <= 2:
-                return 1, 1
-            if gcd(m, n) != 1:
-                continue
-            # we have a character, test if it is primitive
-            chi = Gm[n]
-            if chi.is_primitive():
-                return m, n
-
-    @staticmethod
-    def nextprimchar(m, n):
-        if m < 3:
-            return 3, 2
-        if n < m - 1:
-            Gm = DirichletGroup_conrey(m)
-        while 1:
-            n += 1
-            if n >= m:
-                m, n = m + 1, 2
-                Gm = DirichletGroup_conrey(m)
-            if gcd(m, n) != 1:
-                continue
-            # we have a character, test if it is primitive
-            chi = Gm[n]
-            if chi.is_primitive():
-                return m, n
 
 
 #############################################################################
