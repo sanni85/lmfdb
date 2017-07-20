@@ -47,11 +47,11 @@ class HMFTest(LmfdbTest):
 
 
     def test_search_CM(self):
-        L = self.tc.get('?start=0&field_label=&deg=5&disc=&weight=2&level_norm=&dimension=&cm=only&bc=include&count=100')
+        L = self.tc.get('/ModularForm/GL2/TotallyReal/?start=0&field_label=&deg=5&disc=&weight=2&level_norm=&dimension=&cm=only&bc=include&count=100')
         assert '121.1-b' in L.data
         
     def test_search_base_change(self):
-        L = self.tc.get('/ModularForm/GL2/TotallyReal/?start=0&field_label=&deg=5&disc=&weight=2&level_norm=&dimension=&cm=include&bc=exclude&count=100')
+        L = self.tc.get('/ModularForm/GL2/TotallyReal/?start=0&field_label=&deg=5&disc=&cm=include&bc=exclude&count=100')
         assert '/ModularForm/GL2/TotallyReal/5.5.14641.1/holomorphic/5.5.14641.1-67.5-a' in L.data
             
     def test_hmf_page(self):
