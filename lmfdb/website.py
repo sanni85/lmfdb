@@ -25,6 +25,8 @@ import half_integral_weight_forms
 assert half_integral_weight_forms
 import siegel_modular_forms
 assert siegel_modular_forms
+import paramodular
+assert paramodular
 import modular_forms
 assert modular_forms
 import elliptic_curves
