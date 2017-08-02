@@ -249,7 +249,21 @@
     - title: $G_2$
       status: future
 
-8Groups:
+8Lattices:
+   type: simple
+   heading:
+      title: Lattices
+   parts:
+    - title: "Integral:"
+      part2:
+         - title: $/\Z$
+           url_for: "lattice.lattice_render_webpage"
+      colspan: onecolumn
+    - title: Genera
+      status: future
+      colspan: onecolumn
+
+9Groups:
    type: simple
    heading:
       title: Groups
@@ -261,8 +275,6 @@
     - title: Sato-Tate groups
       url_for: "st.index"
       colspan: onecolumn
-    - title: Lattices
-      url_for: "lattice.lattice_render_webpage"
     - title: Subgroups of
       part2:
          - title: $\SL(2)$
@@ -274,7 +286,7 @@
       status: future
       colspan: onecolumn
 
-9Know:
+10Know:
    type: single
    heading:
        title: Knowledge
