@@ -317,12 +317,13 @@ str([1,-2,-2,-2,2,-1,0,2,3,0,0,2,2,-1,-1,-2,2,-1,-1,-2,1,-1,-1,3]), str([1,-2,-2
 #        info['knowl_args']= "name=%s&report=%s" %(info['name'], info['comments'].replace(' ', '-space-'))
     info['properties'] = [
         ('Dimension', '%s' %info['dim']),
+        ('Signature', '%s' %info['sig']),
         ('Determinant', '%s' %info['det']),
         ('Level', '%s' %info['level'])]
     if info['class_number'] == 0:
-        info['properties']=[('Class number', 'not available')]+info['properties']
+        info['properties']=info['properties']+[('Class number', 'not available')]
     else:
-        info['properties']=[('Class number', '%s' %info['class_number'])]+info['properties']
+        info['properties']=info['properties']+[('Class number', '%s' %info['class_number'])]
     info['properties']=[('Label', '%s' % info['label'])]+info['properties']
 
     if info['name'] != "" :
