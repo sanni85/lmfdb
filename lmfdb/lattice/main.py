@@ -11,7 +11,7 @@ LIST_RE = re.compile(r'^(\d+|(\d+-\d+))(,(\d+|(\d+-\d+)))*$')
 from flask import render_template, request, url_for, redirect, make_response, flash,  send_file
 from markupsafe import Markup
 
-from sage.all import ZZ, QQ, PolynomialRing, latex, matrix, PowerSeriesRing, sqrt
+from sage.all import ZZ, QQ, PolynomialRing, latex, matrix, PowerSeriesRing, sqrt, sage_eval
 
 from lmfdb.base import getDBConnection
 from lmfdb.utils import to_dict, web_latex_split_on_pm, random_object_from_collection
@@ -133,7 +133,6 @@ def lattice_search(**args):
                             ('minimum','Minimal vector length'), ('class_number',None)):
             parse_ints(info, query, field, name)
 
-        aut= info.get('aut')
         parse_ints(info, query, 'aut.0', 'Group order') #only th first entry of the field aut is checked 
 
         # Check if length of gram is triangular
@@ -142,6 +141,7 @@ def lattice_search(**args):
             flash(Markup("Error: <span style='color:black'>%s</span> is not a valid input for Gram matrix.  It must be a list of integer vectors of triangular length, such as [1,2,3]." % (gram)),"error")
             raise ValueError
         parse_list(info, query, 'gram', process=vect_to_sym)
+
     except ValueError as err:
         info['err'] = str(err)
         return search_input_error(info)
@@ -235,7 +235,7 @@ def render_lattice_webpage(**args):
     if f['par']==1:
         info['par'] = "even"
     else:
-        infor['par'] = "odd"
+        info['par'] = "odd"
     info['det'] = int(f['det'])
     info['level'] = int(f['level'])
     info['gram'] = vect_to_matrix(f['gram'])
@@ -521,7 +521,7 @@ def download_lattice_coeff_theta(**args):
     outstr = c + ' List of the first 150 coefficients of the theta series of the lattice %s, downloaded from the LMFDB on %s. \n\n'%(res['label'], mydate)
     outstr += download_assignment_start[lang] + '\\\n'
     if res['name']==['Leech']:
-        outstr += str([sage_eval(i) for i in res['theta_series'])
+        outstr += str([sage_eval(i) for i in res['theta_series']])
     else:
         outstr += str(res['theta_series'])
     outstr += download_assignment_end[lang]

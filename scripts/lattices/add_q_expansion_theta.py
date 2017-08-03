@@ -4,7 +4,7 @@ r""" Check presence if the first 150 coefficients of the q expansion of the thet
 Initial version: Samuele Anni
 """
 import os
-from sage.all import matrix, Magma, QuadraticForm
+from sage.all import matrix, Magma, QuadraticForm, sage_eval
 
 
 from pymongo.mongo_client import MongoClient
@@ -37,7 +37,8 @@ def check_add_qexp(dim, min_det=1, max_det=None, fix=False):
             print("q expansion NOT stored")
             if fix:
                 M=l['gram']
-                exp=sage_eval(magma.eval("Coefficients(PowerSeries(ThetaSeriesModularForm(LatticeWithGram(Matrix(%s))), 150));\n" %M).split('\n',1)[0])
+                mag = Magma()
+                exp=sage_eval(mag.eval("Coefficients(PowerSeries(ThetaSeriesModularForm(LatticeWithGram(Matrix(%s))), 150));\n" %M).split('\n',1)[0])
                 lat.update({'label': l['label']}, {"$set": {'theta_series': exp}}, upsert=True)
                 print("Fixed lattice %s" % l['label'])
         else:
@@ -63,14 +64,15 @@ def check_add_group_str(dim, min_det=1, max_det=None, fix=False):
         if l['aut'][3]== "":
             print("group structure NOT stored")
             if fix:
-                M=l['gram']
+                M=matrix(l['gram'])
                 G=QuadraticForm(2*M).automorphism_group()
                 if G.oder()!=l['aut'][0]:
-                    print "data do not match"
+                    print "******************************************************"
+                    print("data do not match for lattice %s" % l['label'])
                 else:
                     try:
-                        structure=.structure_description()
-                    except RuntimeError
+                        structure=G.structure_description()
+                    except RuntimeError:
                         print "RuntimeError"
                         structure="not available"
                     new_aut=l['aut']
@@ -79,5 +81,3 @@ def check_add_group_str(dim, min_det=1, max_det=None, fix=False):
                 print("Fixed lattice %s" % l['label'])
         else:
             print("automorphism group structure stored")
-
-
