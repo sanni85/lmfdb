@@ -10,11 +10,12 @@
 
 <table>
     <tr><td align=right>{{ KNOWL('lattice.dimension', title='Dimension') }}:</td><td>${{info.dim}}$</td></tr>
+    <tr><td align=right>{{ KNOWL('lattice.signature', title='Signature') }}:</td><td>${{info.sig}}$</td></tr>
     <tr><td align=right>{{ KNOWL('lattice.determinant', title='Determinant') }}:</td><td>${{info.det}}$</td></tr>
     <tr><td align=right>{{ KNOWL('lattice.level', title='Level') }}:</td><td>${{info.level}}$</td></tr>
     <tr><td align=right>{{ KNOWL('lattice.label', title='Label') }}:</td><td>${{info.label}}$</td></tr>
+    <tr><td align=right>{{ KNOWL('lattice.parity', title='Parity') }}:</td><td>{{info.par}}</td></tr>
     <tr><td align=right>{{ KNOWL('lattice.density', title='Density') }}:</td><td>${{info.density }}\dots$</td></tr>
-    <tr><td align=right>{{ KNOWL('lattice.group_order', title='Group order') }}:</td><td>${{info.aut }}$</td></tr>
     <tr><td align=right>{{ KNOWL('lattice.hermite_number', title='Hermite number') }}:</td><td>${{info.hermite }}\dots$</td></tr>
     <tr><td align=right>{{ KNOWL('lattice.minimal_vector', title='Minimal vector')}} length:</td><td>${{info.minimum }}$</td></tr>
     <tr><td align=right>{{ KNOWL('lattice.kissing', title='Kissing Number') }}:</td><td>${{info.kissing }}$</td></tr>
@@ -48,6 +49,39 @@
 {% endif %}
 </table>
 
+
+<h2> {{ KNOWL('lattice.gram', title='Gram Matrix') }} </h2>
+<p>${{info.gram}}$</p>
+
+<h2> {{ KNOWL('lattice.automorphism_group', title='Automorphism Group') }} </h2>
+<table>
+    <tr><td align=right>{{ KNOWL('lattice.group_order', title='Group order') }}:</td><td>${{info.aut_order}}$</td></tr>
+    <tr><td align=right>Number of generators:</td><td>${{info.aut_gen_num}}$</td></tr>
+    <tr><td align=right>Generators:</td><td>
+    {% if info.aut_gen %}
+        {% if info.aut_gen_num == 1 %}
+            $({{info.aut_gen}})$</td></tr><tr><td></td><td>Download this matrix for
+            {% for e in info.download_gen %} 
+            <a href="{{e[1]}}">{{e[0]}}</a>{% if not loop.last %},  {% endif %}
+            {% endfor %}</td></tr>
+        {% else %}
+            {% for n in info.aut_gen %}
+                ${{n}}${% if not loop.last %},{% endif %}
+            {% endfor %}
+            </td></tr><tr><td></td><td>Download the list of generators for
+            {% for e in info.download_gen %} 
+            <a href="{{e[1]}}">{{e[0]}}</a>{% if not loop.last %},  {% endif %}
+            {% endfor %}</td></tr>
+        {% endif %}
+    {% else %}
+        not available</td></tr>
+    {% endif %}
+    {% if info.aut_str != "" %}
+        <tr><td align=right>Group structure:</td><td>{{info.aut_str}}</td></tr>
+    {% endif %}
+</table>
+
+
 {% if info.theta_series %}
 <h2> {{ KNOWL('lattice.theta', title='Theta Series') }} </h2>
 
@@ -56,11 +90,11 @@
 <div class="emptyspace"><br></div>
 <button id="morebutton">More coefficients</button>
 </form></p>
-
+<p>Download the first 150 coefficients for {% for e in info.download_theta %} <a href="{{e[1]}}">{{e[0]}}</a>{% if not loop.last %},  {% endif %}{% endfor %}
+</p>
 {% endif %}
 
-<h2> {{ KNOWL('lattice.gram', title='Gram Matrix') }} </h2>
-<p>${{info.gram}}$</p>
+
 
 
 <h2> {{ KNOWL('lattice.genus', title='Genus Structure') }} </h2>
@@ -99,8 +133,6 @@
 {% if info.name or info.comments %}
 <!--<h2><a title = "{{info.label}} [lattice.data]" knowl= "lattice.data" kwargs={{info.knowl_args}}>Comments</a></h2>-->
 <h2>Comments</h2>
-
-
 
 {% if info.name != "" %}
 <p>This {{ KNOWL('lattice.definition', title='integral lattice') }} {{KNOWL('lattice.name', title='is')}} the {{ info.name }} lattice.</p>

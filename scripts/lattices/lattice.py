@@ -26,7 +26,7 @@ password = pw_dict['data']['password']
 C['Lattices'].authenticate('editor', password)
 lat = C.Lattices.lat_new
 
-saving = True 
+saving = False 
 
 def sd(f):
   for k in f.keys():
@@ -79,6 +79,11 @@ def do_import(ll):
     for j in range(len(mykeys)):
         data[mykeys[j]] = ll[j]
 
+    if max([i%2 for i in matrix(data['gram']).diagonal()])==0:
+        data['par']=1
+    else:
+        data['par']=0
+
     blabel = base_label(data['dim'],data['neg'],data['det'],data['level'])
     data['base_label'] = blabel
     data['index'] = label_lookup(blabel)
@@ -98,6 +103,12 @@ def do_import(ll):
         if len(result)>0:
             print "... the lattice with base label "+ blabel + " is isometric to " + str(result[0]['gram'])
             print "***********"
+            if len(result)==1:
+                if data['comments'] != "" and data['comments']!=result[0]['comments']:
+                    new_comments= result[0]['comments']+' '+data['comments']
+                    result[0].update({'comments': new_comments})
+            else:
+                print "...here there is a problem, check storing of " + label
         else:
             lattice = data
     else:

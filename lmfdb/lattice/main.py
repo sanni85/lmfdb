@@ -33,10 +33,10 @@ def lattice_db():
 def vect_to_matrix(v):
     return str(latex(matrix(v)))
 
-def print_q_expansion(list):
+def print_q_expansion(list, name):
      list=[str(c) for c in list]
      Qa=PolynomialRing(QQ,'a')
-     Qq=PowerSeriesRing(Qa,'q')
+     Qq=PowerSeriesRing(Qa,name)
      return web_latex_split_on_pm(Qq([c for c in list]).add_bigoh(len(list)))
 
 def my_latex(s):
@@ -64,6 +64,7 @@ def learnmore_list():
             ('History of lattices', url_for(".history_page"))]
 
 # Return the learnmore list with the matchstring entry removed
+
 def learnmore_list_remove(matchstring):
     return filter(lambda t:t[0].find(matchstring) <0, learnmore_list())
 
@@ -90,12 +91,14 @@ def lattice_render_webpage():
         return lattice_search(**args)
 
 # Random Lattice
+
 @lattice_page.route("/random")
 def random_lattice():
     res = random_object_from_collection(lattice_db())
     return redirect(url_for(".render_lattice_webpage", label=res['label']), 307)
 
 # the label is give by dimension.negative_part_of_signature.determinant.level.genus_enumerator.class_enumerator
+
 lattice_label_regex = re.compile(r'(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d*)')
 
 def split_lattice_label(lab):
@@ -127,8 +130,12 @@ def lattice_search(**args):
     query = {}
     try:
         for field, name in (('dim','Dimension'),('det','Determinant'),('level',None),
-                            ('minimum','Minimal vector length'), ('class_number',None), ('aut','Group order')):
+                            ('minimum','Minimal vector length'), ('class_number',None)):
             parse_ints(info, query, field, name)
+
+        aut= info.get('aut')
+        parse_ints(info, query, 'aut.0', 'Group order') #only th first entry of the field aut is checked 
+
         # Check if length of gram is triangular
         gram = info.get('gram')
         if gram and not (9 + 8*ZZ(gram.count(','))).is_square():
@@ -222,16 +229,27 @@ def render_lattice_webpage(**args):
 
     bread = [('Lattice', url_for(".lattice_render_webpage")), ('%s' % data['label'], ' ')]
     credit = lattice_credit
-    f = lattice_db().find_one({'dim': data['dim'],'det': data['det'],'level': data['level'],'gram': data['gram'],'minimum': data['minimum'],'class_number': data['class_number'],'aut': data[ 'aut'],'name': data['name']})
-    info['dim']= int(f['dim'])
-    info['det']= int(f['det'])
-    info['level']=int(f['level'])
-    info['gram']=vect_to_matrix(f['gram'])
-    info['density']=str(f['density'])
-    info['hermite']=str(f['hermite'])
-    info['minimum']=int(f['minimum'])
-    info['kissing']=int(f['kissing'])
-    info['aut']=int(f['aut'])
+    f = lattice_db().find_one({'dim': data['dim'],'det': data['det'],'level': data['level'],'gram': data['gram'],'minimum': data['minimum'],'class_number': data['class_number'],'aut.0': data['aut'],'name': data['name']})
+    info['dim'] = int(f['dim'])
+    info['sig'] = str(",".join([str(int(f['dim']-f['neg'])), str(int(f['neg']))]))
+    if f['par']==1:
+        info['par'] = "even"
+    else:
+        infor['par'] = "odd"
+    info['det'] = int(f['det'])
+    info['level'] = int(f['level'])
+    info['gram'] = vect_to_matrix(f['gram'])
+    info['density'] = str(f['density'])
+    info['hermite'] = str(f['hermite'])
+    info['minimum'] = int(f['minimum'])
+    info['kissing'] = int(f['kissing'])
+
+    info['aut_order'] = int(f['aut'][0])
+    info['aut_gen_num'] = int(['aut'][1])
+    if info['dim']*info['aut_gen_num']<20:
+        info['aut_gen']=[vect_to_matrix(i) for i in f['aut'][2]]
+    info['download_gen'] = [(i, url_for(".render_lattice_webpage_download", label=info['label'], lang=i, obj='aut_gen')) for i in ['gp', 'magma','sage']]
+    info['aut_str']=str(f['aut'][3])
 
     if f['shortest']=="":
         info['shortest']==f['shortest']
@@ -245,21 +263,26 @@ def render_lattice_webpage(**args):
                 max_vect_num=min(int(round(100/(info['dim']))), int(round(info['kissing']/2))-1);
                 info['shortest']=[str([tuple(f['shortest'][i])]).strip('[').strip(']').replace('),', '), ') for i in range(max_vect_num+1)]
                 info['all_shortest']="no"
-        info['download_shortest'] = [
-            (i, url_for(".render_lattice_webpage_download", label=info['label'], lang=i, obj='shortest_vectors')) for i in ['gp', 'magma','sage']]
+        info['download_shortest'] = [(i, url_for(".render_lattice_webpage_download", label=info['label'], lang=i, obj='shortest_vectors')) for i in ['gp', 'magma','sage']]
 
     if f['name']==['Leech']:
         info['shortest']=[str([1,-2,-2,-2,2,-1,-1,3,3,0,0,2,2,-1,-1,-2,2,-2,-1,-1,0,0,-1,2]), 
 str([1,-2,-2,-2,2,-1,0,2,3,0,0,2,2,-1,-1,-2,2,-1,-1,-2,1,-1,-1,3]), str([1,-2,-2,-1,1,-1,-1,2,2,0,0,2,2,0,0,-2,2,-1,-1,-1,0,-1,-1,2])]
         info['all_shortest']="no"
-        info['download_shortest'] = [
-            (i, url_for(".render_lattice_webpage_download", label=info['label'], lang=i, obj='shortest_vectors')) for i in ['gp', 'magma','sage']]
+        info['download_shortest'] = [(i, url_for(".render_lattice_webpage_download", label=info['label'], lang=i, obj='shortest_vectors')) for i in ['gp', 'magma','sage']]
 
     ncoeff=20
     if f['theta_series'] != "":
         coeff=[f['theta_series'][i] for i in range(ncoeff+1)]
-        info['theta_series']=my_latex(print_q_expansion(coeff))
-        info['theta_display'] = url_for(".theta_display", label=f['label'], number="")
+        if f['par']==1:
+            info['theta_series']=my_latex(print_q_expansion(coeff, 'q'))
+            info['theta_display'] = url_for(".theta_display", label=f['label'], number="", name='q')
+        else:
+            info['theta_series']=my_latex(print_q_expansion(coeff, 'q_2'))
+            info['theta_display'] = url_for(".theta_display", label=f['label'], number="", name='q_2')
+    info['download_theta'] = [
+        (i, url_for(".render_lattice_webpage_download", label=info['label'], lang=i, obj='theta')) for i in ['gp', 'magma','sage']]
+
 
     info['class_number']=int(f['class_number'])
 
@@ -321,8 +344,8 @@ def vect_to_sym(v):
 
 
 #auxiliary function for displaying more coefficients of the theta series
-@lattice_page.route('/theta_display/<label>/<number>')
-def theta_display(label, number):
+@lattice_page.route('/theta_display/<label>/<number>/<name>')
+def theta_display(label, number, name):
     try:
         number = int(number)
     except:
@@ -333,7 +356,7 @@ def theta_display(label, number):
         number = 150
     data = lattice_db().find_one({'label': label})
     coeff=[data['theta_series'][i] for i in range(number+1)]
-    return print_q_expansion(coeff)
+    return print_q_expansion(coeff, name)
 
 
 #data quality pages
@@ -419,7 +442,14 @@ def render_lattice_webpage_download(**args):
         response = make_response(download_lattice_full_lists_g(**args))
         response.headers['Content-type'] = 'text/plain'
         return response
-
+    elif args['obj'] == 'aut_gen':
+        response = make_response(download_lattice_full_lists_a(**args))
+        response.headers['Content-type'] = 'text/plain'
+        return response
+    elif args['obj'] == 'download_theta':
+        response = make_response(download_lattice_coeff_theta(**args))
+        response.headers['Content-type'] = 'text/plain'
+        return response
 
 def download_lattice_full_lists_v(**args):
     label = str(args['label'])
@@ -439,7 +469,6 @@ def download_lattice_full_lists_v(**args):
     outstr += '\n'
     return outstr
 
-
 def download_lattice_full_lists_g(**args):
     label = str(args['label'])
     res = lattice_db().find_one({'label': label})
@@ -456,6 +485,44 @@ def download_lattice_full_lists_g(**args):
     outstr += download_assignment_start[lang] + '[\\\n'
     outstr += ",\\\n".join([entry(r) for r in res['genus_reps']])
     outstr += ']'
+    outstr += download_assignment_end[lang]
+    outstr += '\n'
+    return outstr
+
+def download_lattice_full_lists_a(**args):
+    label = str(args['label'])
+    res = lattice_db().find_one({'label': label})
+    mydate = time.strftime("%d %B %Y")
+    if res is None:
+        return "Data not available"
+    lang = args['lang']
+    c = download_comment_prefix[lang]
+    mat_start = "Mat(" if lang == 'gp' else "Matrix("
+    mat_end = "~)" if lang == 'gp' else ")"
+    entry = lambda r: "".join([mat_start,str(r),mat_end])
+
+    outstr = c + ' Full list of generators for the automorphism group of the lattice %s downloaded from the LMFDB on %s. \n\n'%(res['label'], mydate)
+    outstr += download_assignment_start[lang] + '[\\\n'
+    outstr += ",\\\n".join([entry(r) for r in res['aut'][2]])
+    outstr += ']'
+    outstr += download_assignment_end[lang]
+    outstr += '\n'
+    return outstr
+
+def download_lattice_coeff_theta(**args):
+    label = str(args['label'])
+    res = lattice_db().find_one({'label': label})
+    mydate = time.strftime("%d %B %Y")
+    if res is None:
+        return "No such lattice"
+    lang = args['lang']
+    c = download_comment_prefix[lang]
+    outstr = c + ' List of the first 150 coefficients of the theta series of the lattice %s, downloaded from the LMFDB on %s. \n\n'%(res['label'], mydate)
+    outstr += download_assignment_start[lang] + '\\\n'
+    if res['name']==['Leech']:
+        outstr += str([sage_eval(i) for i in res['theta_series'])
+    else:
+        outstr += str(res['theta_series'])
     outstr += download_assignment_end[lang]
     outstr += '\n'
     return outstr
