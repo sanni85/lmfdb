@@ -26,7 +26,7 @@ lattice_credit = 'Samuele Anni, Stephan Ehlen, Anna Haensch, Gabriele Nebe and N
 # Database connection
 
 def lattice_db():
-    return getDBConnection().Lattices.lat
+    return getDBConnection().Lattices.lat_new
 
 # utilitary functions for displays 
 
@@ -95,8 +95,8 @@ def random_lattice():
     res = random_object_from_collection(lattice_db())
     return redirect(url_for(".render_lattice_webpage", label=res['label']), 307)
 
-
-lattice_label_regex = re.compile(r'(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d*)')
+# the label is give by dimension.negative_part_of_signature.determinant.level.genus_enumerator.class_enumerator
+lattice_label_regex = re.compile(r'(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d*)')
 
 def split_lattice_label(lab):
     return lattice_label_regex.match(lab).groups()

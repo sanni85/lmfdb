@@ -24,7 +24,7 @@ pw_dict = yaml.load(open(os.path.join(os.getcwd(), "passwords.yaml")))
 username = pw_dict['data']['username']
 password = pw_dict['data']['password']
 C['Lattices'].authenticate('editor', password)
-lat = C.Lattices.lat
+lat = C.Lattices.lat_new
 
 saving = True 
 
@@ -41,8 +41,8 @@ def string2list(s):
   if s=='': return []
   return [int(a) for a in s.split(',')]
 
-def base_label(dimension,determinant,level,class_number):
-    return ".".join([str(dimension),str(determinant),str(level),str(class_number)])
+def base_label(dimension,neg_signature,determinant,level):
+    return ".".join([str(dimension),str(neg_signature),str(determinant),str(level)])
 
 def last_label(base_label, n):
     return ".".join([str(base_label),str(n)])
@@ -73,13 +73,13 @@ def label_lookup(base_label):
     return 1
 
 def do_import(ll):
-    dim,det,level,gram,density,hermite,minimum,kissing,shortest,aut,theta_series,class_number,genus_reps,name,comments = ll
-    mykeys = ['dim','det','level','gram','density','hermite', 'minimum','kissing','shortest','aut','theta_series','class_number','genus_reps','name','comments']
+    dim,neg,det,level,gram,density,hermite,minimum,kissing,shortest,aut,theta_series,class_number,genus_reps,name,comments = ll
+    mykeys = ['dim','neg','det','level','gram','density','hermite', 'minimum','kissing','shortest','aut','theta_series','class_number','genus_reps','name','comments']
     data = {}
     for j in range(len(mykeys)):
         data[mykeys[j]] = ll[j]
 
-    blabel = base_label(data['dim'],data['det'],data['level'], data['class_number'])
+    blabel = base_label(data['dim'],data['neg'],data['det'],data['level'])
     data['base_label'] = blabel
     data['index'] = label_lookup(blabel)
     label= last_label(blabel, data['index'])
